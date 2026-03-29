@@ -15,14 +15,35 @@ module.exports = {
 		// Extend the default Tailwind theme.
 		extend: {
 			colors: {
-				primary: '#3b3663',
-				secondary: '#f47514',
-				
+				primary:       '#3b3663',
+				secondary:     '#f47514',
+				'roon-blue':   '#3b3ef6',
+				'roon-indigo': '#2a2cc4',
 			},
 			fontFamily: {
-				body: ['SVN-Poppins', 'sans-serif'],
+				body:  ['SVN-Poppins', 'sans-serif'],
+				inter: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
 			},
-
+			width: {
+				'roon-sidebar': '200px',
+			},
+			height: {
+				'roon-player': '72px',
+				'roon-header': '52px',
+			},
+			spacing: {
+				'roon-player': '72px',
+				'roon-header': '52px',
+				'roon-sidebar': '200px',
+			},
+			minWidth: {
+				'roon-sidebar': '200px',
+			},
+			zIndex: {
+				'60': '60',
+				'100': '100',
+				'200': '200',
+			},
 		},
 		container: {
 			center: true,

@@ -1,0 +1,118 @@
+﻿{
+    "key": "group_album_tracks",
+    "title": "Danh sách bài hát (Album Tracks)",
+    "fields": [
+        {
+            "key": "field_jellyfin_album_id",
+            "label": "Jellyfin Album ID",
+            "name": "jellyfin_album_id",
+            "type": "text",
+            "instructions": "Nếu nhập ID album Jellyfin, website sẽ tự lấy toàn bộ bài hát từ API. Ví dụ: 2ee6e2ef44bf609e937a382e6dcf6021",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "100",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "placeholder": "Dán Jellyfin Album ID vào đây",
+            "prepend": "",
+            "append": "",
+            "maxlength": ""
+        },
+        {
+            "key": "field_album_tracks",
+            "label": "Danh sách bài hát thủ công",
+            "name": "album_tracks",
+            "type": "repeater",
+            "instructions": "Fallback khi không dùng Jellyfin Album ID. Nếu đã nhập Album ID ở trên thì danh sách này sẽ được bỏ qua.",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "collapsed": "",
+            "min": 0,
+            "max": 0,
+            "layout": "table",
+            "button_label": "Thêm bài hát",
+            "sub_fields": [
+                {
+                    "key": "field_track_title",
+                    "label": "Tên bài hát",
+                    "name": "track_title",
+                    "type": "text",
+                    "instructions": "",
+                    "required": 1,
+                    "conditional_logic": 0,
+                    "wrapper": {
+                        "width": "30",
+                        "class": "",
+                        "id": ""
+                    },
+                    "default_value": "",
+                    "placeholder": "",
+                    "prepend": "",
+                    "append": "",
+                    "maxlength": ""
+                },
+                {
+                    "key": "field_track_duration",
+                    "label": "Thời lượng",
+                    "name": "track_duration",
+                    "type": "text",
+                    "instructions": "",
+                    "required": 0,
+                    "conditional_logic": 0,
+                    "wrapper": {
+                        "width": "15",
+                        "class": "",
+                        "id": ""
+                    },
+                    "default_value": "",
+                    "placeholder": "VD: 4:30",
+                    "prepend": "",
+                    "append": "",
+                    "maxlength": ""
+                },
+                {
+                    "key": "field_track_file",
+                    "label": "Link download Jellyfin",
+                    "name": "track_file",
+                    "type": "url",
+                    "instructions": "Dán link download Jellyfin dạng /Items/{id}/Download. Hệ thống sẽ tự tạo link nghe ở giao diện.",
+                    "required": 0,
+                    "conditional_logic": 0,
+                    "wrapper": {
+                        "width": "55",
+                        "class": "",
+                        "id": ""
+                    },
+                    "default_value": "",
+                    "placeholder": "http://domain:8096/Items/{id}/Download?"
+                }
+            ]
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "post_type",
+                "operator": "==",
+                "value": "post"
+            }
+        ]
+    ],
+    "menu_order": 0,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": "",
+    "active": true,
+    "description": "",
+    "modified": 1774783802
+}

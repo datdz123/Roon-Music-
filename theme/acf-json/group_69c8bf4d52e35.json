@@ -1,13 +1,13 @@
-﻿{
-    "key": "group_680e4f7136aab",
-    "title": "[Option] Header",
+{
+    "key": "group_69c8bf4d52e35",
+    "title": "API key",
     "fields": [
         {
-            "key": "field_680e4f711b208",
-            "label": "Hướng dẫn",
-            "name": "",
+            "key": "field_69c8bf4d0e3ad",
+            "label": "API KEY",
+            "name": "jellyfin_api_key",
             "aria-label": "",
-            "type": "message",
+            "type": "text",
             "instructions": "",
             "required": 0,
             "conditional_logic": 0,
@@ -16,9 +16,12 @@
                 "class": "",
                 "id": ""
             },
-            "message": "Để thay đổi Logo, Favicon, Tiêu đề và khẩu hiệu Website: <a target=\"_blank\" href=\"customize.php\">Tùy biến &gt; Nhận dạng site</a>.",
-            "new_lines": "wpautop",
-            "esc_html": 0
+            "default_value": "",
+            "maxlength": "",
+            "allow_in_bindings": 0,
+            "placeholder": "",
+            "prepend": "",
+            "append": ""
         }
     ],
     "location": [
@@ -26,7 +29,7 @@
             {
                 "param": "options_page",
                 "operator": "==",
-                "value": "header"
+                "value": "cai-dat-chung"
             }
         ]
     ],
@@ -39,5 +42,6 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1774783201
+    "display_title": "",
+    "modified": 1774763869
 }

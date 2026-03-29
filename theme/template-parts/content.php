@@ -4,7 +4,7 @@
  *
  * @link https://developer.wordpress.org/themes/basics/template-hierarchy/
  *
- * @package gnws
+ * @package roon
  */
 
 ?>
@@ -14,7 +14,7 @@
 	<header class="entry-header">
 		<?php
 		if ( is_sticky() && is_home() && ! is_paged() ) {
-			printf( '<span">%s</span>', esc_html_x( 'Featured', 'post', 'gnws' ) );
+			printf( '<span">%s</span>', esc_html_x( 'Featured', 'post', 'roon' ) );
 		}
 		if ( is_singular() ) :
 			the_title( '<h1 class="entry-title">', '</h1>' );
@@ -24,15 +24,15 @@
 		?>
 	</header><!-- .entry-header -->
 
-	<?php gnws_post_thumbnail(); ?>
+	<?php roon_post_thumbnail(); ?>
 
-	<div <?php gnws_content_class( 'entry-content' ); ?>>
+	<div <?php roon_content_class( 'entry-content' ); ?>>
 		<?php
 		the_content();
 
 		wp_link_pages(
 			array(
-				'before' => '<div>' . __( 'Pages:', 'gnws' ),
+				'before' => '<div>' . __( 'Pages:', 'roon' ),
 				'after'  => '</div>',
 			)
 		);
@@ -40,7 +40,7 @@
 	</div><!-- .entry-content -->
 
 	<footer class="entry-footer">
-		<?php gnws_entry_footer(); ?>
+		<?php roon_entry_footer(); ?>
 	</footer><!-- .entry-footer -->
 
 </article><!-- #post-${ID} -->

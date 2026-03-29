@@ -1,0 +1,22 @@
+﻿{
+    "key": "ui_options_page_67f0cai_dat_chung",
+    "title": "Cài đặt chung",
+    "active": true,
+    "menu_order": 1,
+    "page_title": "Cài đặt chung",
+    "menu_slug": "cai-dat-chung",
+    "parent_slug": "cai-dat-site",
+    "advanced_configuration": 1,
+    "icon_url": "",
+    "menu_title": "",
+    "position": "",
+    "redirect": false,
+    "description": "",
+    "update_button": "Update",
+    "updated_message": "Options Updated",
+    "capability": "edit_posts",
+    "data_storage": "options",
+    "post_id": "",
+    "autoload": 0,
+    "modified": 1774783202
+}

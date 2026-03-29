@@ -1,0 +1,15 @@
+/* roon.css — chỉ giữ những gì Tailwind không thể xử lý được */
+
+/* Font Inter */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* SPA page hidden/show — Tailwind `hidden` class xử lý display:none,
+   nhưng cần animation khi visible */
+.roon-page {
+  animation: roonFadeIn 0.2s ease;
+}
+
+/* First page visible on load */
+#page-home {
+  display: block;
+}

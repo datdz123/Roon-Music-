@@ -3,7 +3,7 @@
 /**
  * Functions which customizer into WordPress
  *
- * @package gnws
+ * @package roon
  */
 
 
@@ -131,17 +131,17 @@ function cysp_acf_json_load_point( $paths ) {
  * Style Dashboard
  */
 //Css Admin
-if ( ! function_exists( 'gnws_css_admin' ) ) :
-	add_action( 'admin_head', 'gnws_css_admin' );
-	add_action( 'admin_enqueue_scripts', 'gnws_css_admin' );
-	function gnws_css_admin() {
+if ( ! function_exists( 'roon_css_admin' ) ) :
+	add_action( 'admin_head', 'roon_css_admin' );
+	add_action( 'admin_enqueue_scripts', 'roon_css_admin' );
+	function roon_css_admin() {
 		wp_enqueue_style( 'admin_css', get_template_directory_uri() . '/admin/admin.css' );
 	}
 endif;
 //CSS Login
-if ( ! function_exists( 'gnws_css_admin_login' ) ) :
-	add_action( 'login_enqueue_scripts', 'gnws_css_admin_login' );
-	function gnws_css_admin_login() {
+if ( ! function_exists( 'roon_css_admin_login' ) ) :
+	add_action( 'login_enqueue_scripts', 'roon_css_admin_login' );
+	function roon_css_admin_login() {
 		wp_enqueue_style( 'admin_login_css', get_template_directory_uri() . '/admin/login.css' );
 	}
 endif;
@@ -159,24 +159,24 @@ function my_custom_login_url( $url ) {
 /**
  * Automatically set the image Title, Alt-Text, Caption & Description upload (image tab)
  */
-add_action( 'add_attachment', 'gnws_set_image_meta_image_upload' );
-function gnws_set_image_meta_image_upload( $post_ID ) {
+add_action( 'add_attachment', 'roon_set_image_meta_image_upload' );
+function roon_set_image_meta_image_upload( $post_ID ) {
 	if ( wp_attachment_is_image( $post_ID ) ) {
-		$gnws_image_title = get_post( $post_ID )->post_title;
-		$gnws_image_title = preg_replace(
+		$roon_image_title = get_post( $post_ID )->post_title;
+		$roon_image_title = preg_replace(
 			'%\s*[-_\s]+\s*%',
 			' ',
-			$gnws_image_title
+			$roon_image_title
 		);
-		$gnws_image_title = ucwords( strtolower( $gnws_image_title ) );
-		$gnws_my_image_meta = array(
+		$roon_image_title = ucwords( strtolower( $roon_image_title ) );
+		$roon_my_image_meta = array(
 			'ID' => $post_ID,
-			'post_title' => $gnws_image_title,
+			'post_title' => $roon_image_title,
 			'post_excerpt' => '',
 			'post_content' => '',
 		);
-		update_post_meta( $post_ID, '_wp_attachment_image_alt', $gnws_image_title );
-		wp_update_post( $gnws_my_image_meta );
+		update_post_meta( $post_ID, '_wp_attachment_image_alt', $roon_image_title );
+		wp_update_post( $roon_my_image_meta );
 	}
 }
 
@@ -184,10 +184,10 @@ function gnws_set_image_meta_image_upload( $post_ID ) {
 /**
  * Remove Logo / Version / Help
  */
-function gnws_remove_version() {
+function roon_remove_version() {
 	return '';
 }
-add_filter( 'the_generator', 'gnws_remove_version' );
+add_filter( 'the_generator', 'roon_remove_version' );
 function change_footer_admin() {
 	return ' ';
 }
@@ -200,9 +200,9 @@ remove_action( 'wp_head', 'wp_generator' );
 // Remove version from rss
 add_filter( 'the_generator', '__return_empty_string' );
 
-add_action( 'admin_head', 'gnws_remove_help_tabs' );
+add_action( 'admin_head', 'roon_remove_help_tabs' );
 
-function gnws_remove_help_tabs() {
+function roon_remove_help_tabs() {
   $screen = get_current_screen();
   if ( $screen ) {
     $screen->remove_help_tabs();

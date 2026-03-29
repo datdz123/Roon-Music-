@@ -4,7 +4,7 @@
  *
  * @link https://developer.wordpress.org/themes/basics/template-hierarchy/
  *
- * @package gnws
+ * @package roon
  */
 
 get_header();
@@ -29,7 +29,7 @@ get_header();
 			endwhile;
 
 			// Previous/next page navigation.
-			gnws_the_posts_navigation();
+			roon_the_posts_navigation();
 
 		else :
 
