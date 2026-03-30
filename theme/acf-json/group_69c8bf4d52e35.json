@@ -12,7 +12,7 @@
             "required": 0,
             "conditional_logic": 0,
             "wrapper": {
-                "width": "",
+                "width": "50",
                 "class": "",
                 "id": ""
             },
@@ -22,8 +22,26 @@
             "placeholder": "",
             "prepend": "",
             "append": ""
+        },
+        {
+            "key": "field_jellyfin_server_url",
+            "label": "Jellyfin Server URL",
+            "name": "jellyfin_server_url",
+            "aria-label": "",
+            "type": "url",
+            "instructions": "Nhập địa chỉ Jellyfin, ví dụ: http://cuongzoi.synology.me:8096 hoặc URL nội bộ trong NAS.",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "placeholder": "http://cuongzoi.synology.me:8096"
         }
     ],
+    
     "location": [
         [
             {
@@ -43,5 +61,5 @@
     "description": "",
     "show_in_rest": 0,
     "display_title": "",
-    "modified": 1774763869
+    "modified": 4074763869
 }

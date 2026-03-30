@@ -1,9 +1,9 @@
-﻿{
-    "key": "group_album_tracks",
-    "title": "Danh sách bài hát (Album Tracks)",
+{
+    "key": "group_6606cf9e1d886",
+    "title": "Danh sách bài hát (Album Tracks) - Fixed Sync",
     "fields": [
         {
-            "key": "field_jellyfin_album_id",
+            "key": "field_6606cf9e2ae16",
             "label": "Jellyfin Album ID",
             "name": "jellyfin_album_id",
             "type": "text",
@@ -22,7 +22,7 @@
             "maxlength": ""
         },
         {
-            "key": "field_album_tracks",
+            "key": "field_6606cf9e2ae17",
             "label": "Danh sách bài hát thủ công",
             "name": "album_tracks",
             "type": "repeater",
@@ -41,7 +41,7 @@
             "button_label": "Thêm bài hát",
             "sub_fields": [
                 {
-                    "key": "field_track_title",
+                    "key": "field_track_title_new",
                     "label": "Tên bài hát",
                     "name": "track_title",
                     "type": "text",
@@ -60,7 +60,7 @@
                     "maxlength": ""
                 },
                 {
-                    "key": "field_track_duration",
+                    "key": "field_track_duration_new",
                     "label": "Thời lượng",
                     "name": "track_duration",
                     "type": "text",
@@ -79,7 +79,7 @@
                     "maxlength": ""
                 },
                 {
-                    "key": "field_track_file",
+                    "key": "field_track_file_new",
                     "label": "Link download Jellyfin",
                     "name": "track_file",
                     "type": "url",
@@ -114,5 +114,5 @@
     "hide_on_screen": "",
     "active": true,
     "description": "",
-    "modified": 4574783802
+    "modified": 1711718194
 }
