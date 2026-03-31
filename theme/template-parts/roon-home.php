@@ -19,26 +19,26 @@ $listen_later = array_slice($recent_albums, 0, 3);
 <div id="page-home" class="roon-page font-inter">
     <h1 class="text-[38px] font-bold tracking-tight text-gray-900 mb-6 leading-tight">Hi, ROON</h1>
 
-    <div class="grid grid-cols-4 gap-4 mb-8">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-8">
         <?php foreach ($stats as $stat) : ?>
-        <div class="flex items-center gap-4 p-5 bg-white border border-gray-100 rounded-2xl shadow-sm cursor-pointer hover:shadow-xl hover:border-gray-200 hover:-translate-y-1 transition-all duration-300 group"
+        <div class="flex items-center gap-3 sm:gap-4 p-4 sm:p-5 bg-white border border-gray-100 rounded-2xl shadow-sm cursor-pointer hover:shadow-xl hover:border-gray-200 hover:-translate-y-1 transition-all duration-300 group"
              data-page="<?php echo esc_attr($stat['icon']); ?>">
             <div class="text-gray-300 group-hover:text-roon-blue transition-colors duration-300 flex-shrink-0">
                 <?php if ($stat['icon'] === 'artists') : ?>
-                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <svg class="w-7 h-7 sm:w-[34px] sm:h-[34px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
                     <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                 </svg>
                 <?php elseif ($stat['icon'] === 'albums') : ?>
-                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <svg class="w-7 h-7 sm:w-[34px] sm:h-[34px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                     <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/>
                 </svg>
                 <?php elseif ($stat['icon'] === 'tracks') : ?>
-                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <svg class="w-7 h-7 sm:w-[34px] sm:h-[34px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                     <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
                 </svg>
                 <?php else : ?>
-                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <svg class="w-7 h-7 sm:w-[34px] sm:h-[34px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                     <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
                     <line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/>
                     <line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
@@ -46,8 +46,8 @@ $listen_later = array_slice($recent_albums, 0, 3);
                 <?php endif; ?>
             </div>
             <div class="flex flex-col">
-                <span class="text-[28px] font-bold text-gray-900 leading-none"><?php echo (int) $stat['count']; ?></span>
-                <span class="text-[11px] font-semibold tracking-[0.1em] text-gray-400 uppercase mt-1"><?php echo esc_html($stat['label']); ?></span>
+                <span class="text-2xl sm:text-[28px] font-bold text-gray-900 leading-none"><?php echo (int) $stat['count']; ?></span>
+                <span class="text-[10px] sm:text-[11px] font-semibold tracking-[0.1em] text-gray-400 uppercase mt-1"><?php echo esc_html($stat['label']); ?></span>
             </div>
         </div>
         <?php endforeach; ?>
@@ -64,12 +64,12 @@ $listen_later = array_slice($recent_albums, 0, 3);
             </div>
             <div class="flex items-center gap-1.5">
                 <button id="btn-recent-prev" class="flex items-center justify-center w-7 h-7 rounded-md text-white/80 hover:bg-white/15 hover:text-white transition-colors">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
                 </button>
                 <button id="btn-recent-next" class="flex items-center justify-center w-7 h-7 rounded-md text-white/80 hover:bg-white/15 hover:text-white transition-colors">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
                 </button>
-                <button id="btn-recent-more" class="bg-white/15 text-white text-[10px] font-bold tracking-widest px-3 py-1.5 rounded-full border-none cursor-pointer hover:bg-white/30 transition-colors">MORE</button>
+                <button class="hidden sm:block text-[11px] font-semibold tracking-widest text-white/60 bg-transparent border-none cursor-pointer px-2 py-1 rounded hover:text-white hover:bg-white/10 transition-colors">MORE</button>
             </div>
         </div>
 

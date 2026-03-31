@@ -39,6 +39,43 @@
             },
             "default_value": "",
             "placeholder": "http://cuongzoi.synology.me:8096"
+        },
+        {
+            "key": "field_shopee_aff_link",
+            "label": "Shopee Aff Link",
+            "name": "shopee_aff_link",
+            "aria-label": "",
+            "type": "url",
+            "instructions": "Nhập link Shopee affiliate sẽ được mở khi người dùng bấm nghe nhạc.",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "placeholder": "https://shopee.vn/..."
+        },
+        {
+            "key": "field_daily_ad_open_limit",
+            "label": "Số lần mở quảng cáo mỗi ngày",
+            "name": "daily_ad_open_limit",
+            "aria-label": "",
+            "type": "number",
+            "instructions": "Giới hạn số lần mở link affiliate trong 1 ngày cho mỗi trình duyệt. Để trống sẽ mặc định là 2.",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "default_value": 2,
+            "min": 0,
+            "max": "",
+            "placeholder": "2",
+            "step": 1
         }
     ],
     
@@ -61,5 +98,5 @@
     "description": "",
     "show_in_rest": 0,
     "display_title": "",
-    "modified": 4074763869
+    "modified": 1774828800
 }

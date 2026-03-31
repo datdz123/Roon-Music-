@@ -6,17 +6,28 @@
 ?>
 
 <aside id="roon-sidebar"
-       class="w-roon-sidebar min-w-roon-sidebar flex flex-col h-screen bg-gray-50 border-r border-gray-200 overflow-y-auto overflow-x-hidden sticky top-0 left-0 z-50 pb-roon-player font-inter flex-shrink-0 transition-transform duration-300">
+       class="fixed inset-y-0 left-0 z-[80] flex h-screen w-[280px] max-w-[85vw] -translate-x-full flex-col overflow-y-auto overflow-x-hidden border-r border-gray-200 bg-gray-50 pb-roon-player font-inter shadow-xl transition-transform duration-300 lg:sticky lg:top-0 lg:left-0 lg:z-50 lg:w-roon-sidebar lg:min-w-roon-sidebar lg:max-w-none lg:translate-x-0 lg:shadow-none">
 
     <!-- ── Logo Row ── -->
-    <div class="flex items-center justify-between px-4 pt-5 pb-3 flex-shrink-0 border-b border-gray-100 mb-2">
+    <div class="mb-2 flex flex-shrink-0 items-center justify-between border-b border-gray-100 px-4 pt-5 pb-3">
         <a href="<?php echo home_url('/'); ?>" class="text-[26px] font-bold tracking-tight text-gray-900 no-underline leading-none">roon</a>
-        <button class="flex items-center justify-center w-8 h-8 rounded-md text-gray-400 hover:bg-gray-200 hover:text-gray-700 transition-colors" title="Settings">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                <circle cx="12" cy="12" r="3"/>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-            </svg>
-        </button>
+        <div class="flex items-center gap-1">
+            <button type="button"
+                    id="roon-sidebar-close"
+                    class="flex h-8 w-8 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-700 lg:hidden"
+                    title="Close menu"
+                    aria-label="Close menu">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+            <button class="flex items-center justify-center w-8 h-8 rounded-md text-gray-400 hover:bg-gray-200 hover:text-gray-700 transition-colors" title="Settings">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </svg>
+            </button>
+        </div>
     </div>
 
     <!-- ── Menu Items ── -->

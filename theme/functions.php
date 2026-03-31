@@ -180,6 +180,14 @@ function roon_scripts()
 	wp_enqueue_script('roon-script', get_template_directory_uri() . '/js/script.min.js', array(), roon_VERSION, true);
 
 	wp_localize_script('roon-script', 'ajaxurl', array('ajaxurl' => admin_url('admin-ajax.php')));
+	wp_localize_script(
+		'roon-script',
+		'roonPlayerSettings',
+		array(
+			'affiliateUrl'     => roon_get_shopee_aff_link(),
+			'dailyAffiliateLimit' => roon_get_daily_ad_open_limit(),
+		)
+	);
 
 	if (is_singular() && comments_open() && get_option('thread_comments')) {
 		wp_enqueue_script('comment-reply');
@@ -200,6 +208,39 @@ function roon_tinymce_add_class($settings)
 	return $settings;
 }
 add_filter('tiny_mce_before_init', 'roon_tinymce_add_class');
+
+/**
+ * Read the Shopee affiliate link from the shared options page.
+ *
+ * @return string
+ */
+function roon_get_shopee_aff_link()
+{
+	if (! function_exists('get_field')) {
+		return '';
+	}
+
+	$link = get_field('shopee_aff_link', 'option');
+
+	return is_string($link) ? trim($link) : '';
+}
+
+/**
+ * Read the daily ad-open limit from the shared options page.
+ *
+ * @return int
+ */
+function roon_get_daily_ad_open_limit()
+{
+	if (! function_exists('get_field')) {
+		return 2;
+	}
+
+	$limit = get_field('daily_ad_open_limit', 'option');
+	$limit = is_numeric($limit) ? (int) $limit : 2;
+
+	return max(0, $limit);
+}
 
 /**
  * Read the Jellyfin API key from the shared options page.
@@ -235,6 +276,182 @@ function roon_get_jellyfin_server_url()
 	}
 
 	return untrailingslashit(trim($server_url));
+}
+
+/**
+ * Build a same-origin HTTPS URL that proxies Jellyfin audio through WordPress.
+ *
+ * @param string $item_id Jellyfin audio item ID.
+ * @return string
+ */
+function roon_get_jellyfin_proxy_stream_url($item_id)
+{
+	$item_id = is_string($item_id) ? trim($item_id) : '';
+
+	if ('' === $item_id) {
+		return '';
+	}
+
+	return add_query_arg(
+		'roon_stream',
+		rawurlencode($item_id),
+		home_url('/')
+	);
+}
+
+/**
+ * Proxy Jellyfin audio through the current site so browsers can play it over HTTPS.
+ *
+ * @return void
+ */
+function roon_maybe_proxy_jellyfin_stream()
+{
+	if (! isset($_GET['roon_stream'])) {
+		return;
+	}
+
+	$item_id = sanitize_text_field(wp_unslash($_GET['roon_stream']));
+
+	if ('' === $item_id) {
+		status_header(400);
+		exit('Missing stream id.');
+	}
+
+	roon_proxy_jellyfin_stream($item_id);
+}
+add_action('template_redirect', 'roon_maybe_proxy_jellyfin_stream', 0);
+
+/**
+ * Stream a Jellyfin track to the browser while forwarding range requests.
+ *
+ * @param string $item_id Jellyfin audio item ID.
+ * @return void
+ */
+function roon_proxy_jellyfin_stream($item_id)
+{
+	$server_url = roon_get_jellyfin_server_url();
+	$api_key    = roon_get_jellyfin_api_key();
+
+	if ('' === $server_url || '' === $api_key) {
+		status_header(500);
+		exit('Jellyfin is not configured.');
+	}
+
+	if (! function_exists('curl_init')) {
+		status_header(500);
+		exit('cURL is required for audio proxying.');
+	}
+
+	$remote_url = add_query_arg(
+		array(
+			'static'  => 'true',
+			'api_key' => $api_key,
+		),
+		$server_url . '/Audio/' . rawurlencode($item_id) . '/stream'
+	);
+
+	while (ob_get_level() > 0) {
+		ob_end_clean();
+	}
+
+	$method          = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+	$request_headers = array();
+
+	if (! empty($_SERVER['HTTP_RANGE'])) {
+		$request_headers[] = 'Range: ' . trim(wp_unslash($_SERVER['HTTP_RANGE']));
+	}
+
+	if (! empty($_SERVER['HTTP_IF_RANGE'])) {
+		$request_headers[] = 'If-Range: ' . trim(wp_unslash($_SERVER['HTTP_IF_RANGE']));
+	}
+
+	$curl = curl_init($remote_url);
+
+	curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $method);
+	curl_setopt($curl, CURLOPT_FOLLOWLOCATION, false);
+	curl_setopt($curl, CURLOPT_RETURNTRANSFER, false);
+	curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 10);
+	curl_setopt($curl, CURLOPT_TIMEOUT, 0);
+	curl_setopt($curl, CURLOPT_BUFFERSIZE, 65536);
+	curl_setopt($curl, CURLOPT_HTTPHEADER, $request_headers);
+	curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+	curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0);
+
+	if ('HEAD' === $method) {
+		curl_setopt($curl, CURLOPT_NOBODY, true);
+	}
+
+	$allowed_headers = array(
+		'content-type',
+		'content-length',
+		'content-range',
+		'accept-ranges',
+		'cache-control',
+		'etag',
+		'last-modified',
+		'content-disposition',
+	);
+
+	curl_setopt(
+		$curl,
+		CURLOPT_HEADERFUNCTION,
+		static function ($curl_handle, $header_line) use ($allowed_headers) {
+			$length = strlen($header_line);
+			$header = trim($header_line);
+
+			if ('' === $header) {
+				return $length;
+			}
+
+			if (preg_match('#^HTTP/\S+\s+(\d{3})#', $header, $matches)) {
+				status_header((int) $matches[1]);
+				return $length;
+			}
+
+			$parts = explode(':', $header, 2);
+			if (2 !== count($parts)) {
+				return $length;
+			}
+
+			$name  = strtolower(trim($parts[0]));
+			$value = trim($parts[1]);
+
+			if (in_array($name, $allowed_headers, true)) {
+				header($parts[0] . ': ' . $value, true);
+			}
+
+			return $length;
+		}
+	);
+
+	if ('HEAD' !== $method) {
+		curl_setopt(
+			$curl,
+			CURLOPT_WRITEFUNCTION,
+			static function ($curl_handle, $chunk) {
+				echo $chunk;
+				if (function_exists('flush')) {
+					flush();
+				}
+
+				return strlen($chunk);
+			}
+		);
+	}
+
+	$success = curl_exec($curl);
+	$error   = curl_error($curl);
+
+	if (false === $success) {
+		if (! headers_sent()) {
+			status_header(502);
+			header('Content-Type: text/plain; charset=utf-8');
+		}
+		echo 'Audio proxy failed: ' . $error;
+	}
+
+	curl_close($curl);
+	exit;
 }
 
 /**
@@ -301,10 +518,7 @@ function roon_get_jellyfin_track_urls($download_url)
 		$query_args['api_key'] = $api_key;
 	}
 
-	$result['stream_url'] = add_query_arg(
-		$query_args,
-		trailingslashit($base_url) . 'Audio/' . rawurlencode($item_id) . '/stream'
-	);
+	$result['stream_url'] = roon_get_jellyfin_proxy_stream_url($item_id);
 
 	return $result;
 }
@@ -397,13 +611,7 @@ function roon_get_jellyfin_album_tracks($album_id)
 
 		$track_id      = sanitize_text_field((string) $item['Id']);
 		$download_url  = add_query_arg('api_key', $api_key, $server_url . '/Items/' . rawurlencode($track_id) . '/Download');
-		$stream_url    = add_query_arg(
-			array(
-				'static'  => 'true',
-				'api_key' => $api_key,
-			),
-			$server_url . '/Audio/' . rawurlencode($track_id) . '/stream'
-		);
+		$stream_url    = roon_get_jellyfin_proxy_stream_url($track_id);
 		$track_number  = isset($item['IndexNumber']) ? (int) $item['IndexNumber'] : 0;
 		$disc_number   = isset($item['ParentIndexNumber']) ? (int) $item['ParentIndexNumber'] : 0;
 

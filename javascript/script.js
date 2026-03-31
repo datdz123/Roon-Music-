@@ -38,7 +38,7 @@
       if ($('.li-plus').length) {
         $('.li-plus').click(function (e) {
           $(this).toggleClass('clicked');
-          $(this).next('.sub-menu').slideToggle(200);
+          $(this).next(".sub-menu").slideToggle(200);
           $(this)
             .parent()
             .siblings()
@@ -83,31 +83,31 @@
      * ROON SPA NAVIGATION
      * ======================================================= */
     const RoonNav = {
-      currentPage: 'home',
-      history: ['home'],
+      currentPage: "home",
+      history: ["home"],
       historyIndex: 0,
 
       pageTitles: {
-        'home':         '',
-        'albums':       'My Albums',
-        'artists':      'My Artists',
-        'tracks':       'My Tracks',
-        'single-album': '',
-        'search':       '',
-        'genres':       'Genres',
-        'live-radio':   'Live Radio',
-        'listen-later': 'Listen Later',
-        'tags':         'Tags',
-        'history':      'History',
-        'composers':    'Composers',
-        'compositions': 'Compositions',
-        'my-radio':     'My Live Radio',
-        'folders':      'Folders',
+        "home":         "",
+        "albums":       "My Albums",
+        "artists":      "My Artists",
+        "tracks":       "My Tracks",
+        "single-album": "",
+        "search":       "",
+        "genres":       "Genres",
+        "live-radio":   "Live Radio",
+        "listen-later": "Listen Later",
+        "tags":         "Tags",
+        "history":      "History",
+        "composers":    "Composers",
+        "compositions": "Compositions",
+        "my-radio":     "My Live Radio",
+        "folders":      "Folders"
       },
 
       init() {
         // Set home active on load
-        this.showPage('home', false);
+        this.showPage("home", false);
 
         // Mọi action liên kết (Sidebar / Stat grid) → Navigate
         $(document).on('click', '[data-page]', (e) => {
@@ -265,20 +265,54 @@
       audio: null,
       isPlaying: false,
       isMuted: false,
-      volumeBeforeMute: 0.75,
-
+      volumeBeforeMute: 0.5,
+      playlist: [],
+      currentTrackIndex: 0,
+      affiliateUrl: "",
+      dailyAffiliateLimit: 2,
       init() {
         this.audio = document.getElementById('roon-audio');
         if (!this.audio) return;
 
-        this.audio.volume = 0.75;
+        this.audio.volume = 0.5;
         this.bindControls();
         this.bindTracklistClicks();
         this.bindAudioEvents();
         this.bindProgressBar();
         this.bindVolumeBar();
+        this.bindSidebarToggle();
       },
+      bindSidebarToggle() {
+        const $sidebar = $('#roon-sidebar');
+        const $overlay = $('#roon-sidebar-overlay');
+        const closeSidebar = () => {
+          $sidebar.removeClass('max-lg:translate-x-0');
+          $overlay.addClass('hidden');
+        };
+        const isOpen = () => $sidebar.hasClass('max-lg:translate-x-0');
 
+        $('#btn-sidebar-toggle').on('click', function(e) {
+          e.stopPropagation();
+          $sidebar.toggleClass('max-lg:translate-x-0');
+          $overlay.toggleClass('hidden');
+        });
+
+        $('#roon-sidebar-close').on('click', function() {
+          closeSidebar();
+        });
+
+        $overlay.on('click', function() {
+          closeSidebar();
+        });
+
+        $(document).on('click', function(e) {
+          if (!isOpen()) return;
+          const $target = $(e.target);
+          if ($target.closest('#roon-sidebar').length) return;
+          if ($target.closest('#btn-sidebar-toggle').length) return;
+          closeSidebar();
+        });
+      },
       bindControls() {
         // Play/Pause
         $('#player-play-pause').on('click', () => this.togglePlay());
@@ -303,7 +337,6 @@
           $(this).toggleClass('text-roon-blue text-gray-300');
         });
       },
-
       bindTracklistClicks() {
         // Tracklist play buttons (single album + track rows)
         $(document).on('click', '[data-stream-url][data-track-title]', (e) => {
@@ -315,7 +348,6 @@
           this.loadTrack(url, title, artist, cover);
         });
       },
-
       bindAudioEvents() {
         const audio = this.audio;
 
@@ -338,7 +370,6 @@
         audio.addEventListener('play',  () => { this.isPlaying = true;  this.updatePlayUI(); });
         audio.addEventListener('pause', () => { this.isPlaying = false; this.updatePlayUI(); });
       },
-
       bindProgressBar() {
         let isDragging = false;
 

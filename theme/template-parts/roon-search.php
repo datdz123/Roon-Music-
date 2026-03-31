@@ -10,7 +10,7 @@
     <!-- Header & Input Area -->
     <div class="w-full max-w-4xl mx-auto px-4 flex flex-col items-center">
         <!-- Heading -->
-        <h1 class="text-[20px] font-bold text-gray-900 mb-6 w-full text-center md:w-3/4">Tìm kiếm</h1>
+        <h1 class="text-[20px] font-bold text-gray-900 mb-6 w-full text-center">Tìm kiếm</h1>
 
         <!-- Search Input -->
         <div class="relative w-full md:w-3/4 mb-5">
@@ -31,7 +31,7 @@
         </div>
 
         <!-- Filters (Chips) -->
-        <div class="flex items-center justify-start md:justify-center gap-2 mb-12 w-full md:w-3/4 overflow-x-auto pb-2 scrollbar-none" style="scrollbar-width: none;">
+        <div class="flex items-center justify-start md:justify-center gap-2 mb-12 w-full overflow-x-auto pb-2 scrollbar-none" style="scrollbar-width: none;">
             <button class="flex-shrink-0 bg-green-500 text-white text-[13px] font-medium px-4 py-1.5 rounded-full border-none cursor-pointer">Tất cả</button>
             <button class="flex-shrink-0 bg-gray-100/80 text-gray-700 hover:bg-gray-200 text-[13px] font-medium px-4 py-1.5 rounded-full border border-gray-200 cursor-pointer transition-colors">Bài hát</button>
             <button class="flex-shrink-0 bg-gray-100/80 text-gray-700 hover:bg-gray-200 text-[13px] font-medium px-4 py-1.5 rounded-full border border-gray-200 cursor-pointer transition-colors">Nhạc Lossless</button>
@@ -108,7 +108,7 @@
                     ['title'=>'Lossless Music', 'cover'=>'https://placehold.co/180x180/374151/e2e8f0?text=lossless+music'],
                     ['title'=>'Lossless Music', 'cover'=>'https://placehold.co/180x180/374151/e2e8f0?text=lossless+music'],
                     ['title'=>'21st Century Breakdown', 'cover'=>'https://placehold.co/180x180/8b0000/ffffff?text=Green+Day'],
-                    ['title'=>'Bruno Mars XXIV', 'cover'=>'https://placehold.co/180x180/e5e5e5/333333?text=Bruno'],
+                    ['title'=>'Bruno Mars XXIV', 'cover'=>'https://placehold.co/180x180/e5e5e5/333333?text=Brunos'],
                 ];
                 foreach ($search_albums as $album) : ?>
                 <div class="roon-album-card cursor-pointer group" data-page-target="single-album" data-album-title="<?php echo esc_attr($album['title']); ?>" data-album-artist="Various Artists">
