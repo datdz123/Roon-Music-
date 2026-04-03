@@ -26,7 +26,7 @@
 		'template-parts/roon',
 		'sidebar',
 		array(
-			'is_premium' => $is_premium,
+			'is_premium' => isset($is_premium) ? $is_premium : false,
 		)
 	);
 	?>
@@ -38,16 +38,6 @@
 		);
 		?>
 		<div id="roon-content" class="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 pb-roon-player">
-			<?php
-			get_template_part( 'template-parts/roon', 'home' );
-			get_template_part( 'template-parts/roon', 'albums' );
-			get_template_part( 'template-parts/roon', 'artists' );
-			get_template_part( 'template-parts/roon', 'tracks' );
-			get_template_part( 'template-parts/roon', 'search' );
-			get_template_part( 'template-parts/roon', 'genres' );
-			get_template_part( 'template-parts/roon', 'playlists' );
-			get_template_part( 'template-parts/roon', 'settings' );
-			?>
 			<?php
 			while ( have_posts() ) :
 				the_post();
@@ -117,48 +107,24 @@
 									<svg width="13" height="13" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>
 									Phát tất cả
 								</button>
-								<button class="flex h-10 w-10 items-center justify-center rounded-full border-none bg-roon-blue text-white transition-colors hover:bg-roon-indigo sm:h-9 sm:w-9">
-									<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-								</button>
 								<?php
-								$icon_btns = array(
-									array(
-										'title' => 'Luu thu vien',
-										'icon'  => 'heart',
-									),
-									array(
-										'title' => 'Tim kiem',
-										'icon'  => 'search',
-									),
-									array(
-										'title' => 'Them',
-										'icon'  => 'more',
-									),
-								);
-								foreach ( $icon_btns as $btn ) :
-									?>
-									<button
-										<?php if ( 'search' === $btn['icon'] ) {
-											echo 'id="btn-show-search"';
-										} ?>
-										title="<?php echo esc_attr( $btn['title'] ); ?>"
-										class="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-transparent text-gray-500 transition-colors hover:border-gray-400 sm:h-[34px] sm:w-[34px]"
-									>
-										<?php if ( 'heart' === $btn['icon'] ) : ?>
-											<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-												<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-											</svg>
-										<?php elseif ( 'search' === $btn['icon'] ) : ?>
-											<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-												<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-											</svg>
-										<?php else : ?>
-											<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-												<circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/>
-											</svg>
-										<?php endif; ?>
+								$enable_download = function_exists('get_field') ? get_field('enable_album_download', 'option') : false;
+								$album_dl_url    = function_exists('get_field') ? get_field('album_download_url_manual', get_the_ID()) : '';
+								
+								if ( ! $enable_download ) :
+								?>
+									<button class="flex min-h-[42px] items-center gap-2 rounded-full border border-gray-800 bg-gray-900 px-5 py-2 text-[13px] font-semibold text-gray-300 transition-colors sm:min-h-0 cursor-not-allowed" title="Tính năng tải về bị hạn chế do Phần cứng máy chủ">
+										<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+										Tải về
 									</button>
-								<?php endforeach; ?>
+								<?php else : ?>
+									<?php if ( $album_dl_url ) : ?>
+									<a href="<?php echo esc_url( $album_dl_url ); ?>" target="_blank" class="flex min-h-[42px] items-center gap-2 rounded-full border-none bg-gray-100 px-5 py-2 text-[13px] font-semibold text-gray-700 hover:bg-gray-200 transition-colors sm:min-h-0 no-underline cursor-pointer">
+										<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+										Tải về
+									</a>
+									<?php endif; ?>
+								<?php endif; ?>
 							</div>
 						</div>
 					</div>
@@ -171,50 +137,60 @@
 
 						<div id="album-tab-tracks">
 							<?php
-							$tracklist = get_field( 'tracklist' );
-							if ( $tracklist ) :
-								?>
-								<div class="space-y-1">
-									<?php
-									foreach ( $tracklist as $index => $track ) :
-										$track_title  = ! empty( $track['track_title'] ) ? $track['track_title'] : 'Unknown Track';
-										$stream_url   = ! empty( $track['stream_url'] ) ? $track['stream_url'] : '#';
-										$duration     = ! empty( $track['duration'] ) ? $track['duration'] : '0:00';
-										$track_artist = '';
-										if ( ! empty( $track['artist'] ) ) {
-											$artist_term = get_term( $track['artist'] );
-											if ( $artist_term && ! is_wp_error( $artist_term ) ) {
-												$track_artist = $artist_term->name;
-											}
-										}
-										if ( empty( $track_artist ) && $artist_terms && ! is_wp_error( $artist_terms ) ) {
-											$track_artist = $artist_terms[0]->name;
-										}
+							$tracks      = function_exists( 'roon_get_post_album_tracks' ) ? roon_get_post_album_tracks( get_the_ID() ) : array();
+							$artist_name = function_exists( 'roon_get_album_artist_name' ) ? roon_get_album_artist_name( get_the_ID() ) : 'Unknown Artist';
+							$album_cover = function_exists( 'roon_get_album_cover_url' ) ? roon_get_album_cover_url( get_the_ID() ) : get_the_post_thumbnail_url( get_the_ID(), 'thumbnail' );
+
+							if ( 'Unknown Artist' === $artist_name && isset( $artist_terms ) && ! is_wp_error( $artist_terms ) && ! empty( $artist_terms ) ) {
+								$artist_name = $artist_terms[0]->name;
+							}
+							?>
+							<div class="flex flex-col divide-y divide-gray-100">
+								<?php
+								if ( $tracks ) :
+									$index = 1;
+									foreach ( $tracks as $track ) :
+										$t_title    = ! empty( $track['track_title'] ) ? $track['track_title'] : 'Unknown Track';
+										$t_duration = ! empty( $track['track_duration'] ) ? $track['track_duration'] : '--:--';
+										$t_url      = ! empty( $track['stream_url'] ) ? $track['stream_url'] : '#';
+										$t_dl       = ! empty( $track['download_url'] ) ? $track['download_url'] : '#';
 										?>
-										<div
-											class="flex cursor-pointer items-center gap-4 rounded-lg p-2 text-sm text-gray-700 hover:bg-gray-100"
-											data-stream-url="<?php echo esc_url( $stream_url ); ?>"
-											data-track-title="<?php echo esc_attr( $track_title ); ?>"
-											data-track-artist="<?php echo esc_attr( $track_artist ); ?>"
-											data-track-cover="<?php echo esc_url( get_the_post_thumbnail_url( get_the_ID(), 'thumbnail' ) ); ?>"
-										>
-											<div class="w-5 text-center text-xs text-gray-400"><?php echo $index + 1; ?></div>
-											<div class="flex-1 font-medium text-gray-800"><?php echo esc_html( $track_title ); ?></div>
-											<?php if ( $track_artist ) : ?>
-												<div class="hidden text-gray-500 sm:block"><?php echo esc_html( $track_artist ); ?></div>
-											<?php endif; ?>
-											<div class="w-10 text-right text-xs text-gray-400"><?php echo esc_html( $duration ); ?></div>
-											<div class="flex items-center">
-												<button class="h-7 w-7 rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-700">
-													<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
-												</button>
+										<div class="group flex cursor-pointer items-center gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-gray-50">
+											<!-- Index -->
+											<span class="w-5 text-right text-[13px] font-medium text-gray-400"><?php echo $index; ?></span>
+
+											<!-- Play circle button -->
+											<button class="ml-1 flex-shrink-0 cursor-pointer border-none bg-transparent p-0 transition-transform hover:scale-110"
+													data-stream-url="<?php echo esc_url( $t_url ); ?>"
+													data-track-title="<?php echo esc_attr( $t_title ); ?>"
+													data-track-artist="<?php echo esc_attr( $artist_name ); ?>"
+													data-track-cover="<?php echo esc_url( $album_cover ); ?>">
+												<svg width="20" height="20" viewBox="0 0 24 24" fill="#3b3ef6">
+													<circle cx="12" cy="12" r="10"/>
+													<polygon points="10 8 16 12 10 16 10 8" fill="white"/>
+												</svg>
+											</button>
+
+											<!-- Track title -->
+											<div class="min-w-0 flex-[2] truncate text-[13.5px] font-medium text-gray-800"><?php echo esc_html( $t_title ); ?></div>
+
+											<!-- Artist Name -->
+											<div class="hidden md:block min-w-0 flex-[1.5] truncate text-[12.5px] text-gray-500"><?php echo esc_html( $artist_name ); ?></div>
+
+											<!-- Right actions -->
+											<div class="flex flex-shrink-0 items-center gap-4">
+												<!-- Duration -->
+												<span class="min-w-[40px] tabular-nums text-right text-[13px] text-gray-400"><?php echo esc_html( $t_duration ); ?></span>
 											</div>
 										</div>
-									<?php endforeach; ?>
-								</div>
-							<?php else : ?>
-								<p>No tracks found for this album.</p>
-							<?php endif; ?>
+										<?php
+										$index++;
+									endforeach;
+								else :
+									?>
+									<p class="py-4 text-sm text-gray-500">No tracks found for this album.</p>
+								<?php endif; ?>
+							</div>
 						</div>
 
 						<div id="album-tab-credits" class="hidden">
@@ -229,4 +205,11 @@
 			<div class="h-24"></div>
 		</div>
 	</div>
+
+	<!-- Audio Player Fixed Bottom -->
+	<?php get_template_part( 'template-parts/roon', 'player' ); ?>
 </div>
+
+<?php wp_footer(); ?>
+</body>
+</html>

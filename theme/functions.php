@@ -188,6 +188,8 @@ function roon_scripts()
 			'dailyAffiliateLimit' => roon_get_daily_ad_open_limit(),
 		)
 	);
+	// Export home URL cho navigation từ single.php
+	wp_add_inline_script( 'roon-script', 'window.roonHomeUrl = ' . json_encode( home_url( '/' ) ) . ';', 'before' );
 
 	if (is_singular() && comments_open() && get_option('thread_comments')) {
 		wp_enqueue_script('comment-reply');
@@ -848,6 +850,55 @@ function roon_get_library_stats()
 		'tracks'    => count($tracks),
 		'composers' => 0,
 	);
+}
+
+/**
+ * Theo dõi lượt xem của Album khi người dùng truy cập trang Single.
+ */
+function roon_track_album_views() {
+    if ( ! is_single() ) return;
+    $post_id = get_the_ID();
+    $view_count = get_post_meta( $post_id, 'roon_view_count', true );
+    if ( empty( $view_count ) ) {
+        $view_count = 0;
+    }
+    update_post_meta( $post_id, 'roon_view_count', intval( $view_count ) + 1 );
+}
+add_action( 'wp_head', 'roon_track_album_views' );
+
+/**
+ * Return popular albums (Lượt xem nhiều).
+ *
+ * @param int $limit Number of albums.
+ * @return array<int, array<string, mixed>>
+ */
+function roon_get_popular_albums($limit = 5)
+{
+	$args = array(
+		'post_type'      => 'post',
+		'post_status'    => 'publish',
+		'posts_per_page' => $limit,
+		'meta_key'       => 'roon_view_count',
+		'orderby'        => 'meta_value_num',
+		'order'          => 'DESC',
+	);
+
+	$posts  = get_posts($args);
+	$albums = array();
+
+	foreach ($posts as $post) {
+		$albums[] = array(
+			'id'     => $post->ID,
+			'title'  => get_the_title($post),
+			'artist' => roon_get_album_artist_name($post->ID),
+			'year'   => get_the_date('Y', $post),
+			'cover'  => roon_get_album_cover_url($post->ID),
+			'url'    => get_permalink($post),
+            'views'  => get_post_meta($post->ID, 'roon_view_count', true) ?: 0,
+		);
+	}
+
+	return $albums;
 }
 
 /**

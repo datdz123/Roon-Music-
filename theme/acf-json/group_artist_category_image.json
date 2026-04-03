@@ -1,0 +1,47 @@
+{
+    "key": "group_artist_category_image",
+    "title": "Ảnh Ca Sĩ (Artist Image)",
+    "fields": [
+        {
+            "key": "field_artist_image",
+            "label": "Ảnh Ca Sĩ",
+            "name": "artist_image",
+            "type": "image",
+            "instructions": "Tải ảnh đại diện cho ca sĩ này. Nếu không có, hệ thống sẽ hiển thị chữ tắt tên.",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "return_format": "array",
+            "preview_size": "thumbnail",
+            "library": "all",
+            "min_width": "",
+            "min_height": "",
+            "min_size": "",
+            "max_width": "",
+            "max_height": "",
+            "max_size": ""
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "taxonomy",
+                "operator": "==",
+                "value": "category"
+            }
+        ]
+    ],
+    "menu_order": 0,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": "",
+    "active": true,
+    "description": "Field ảnh đại diện cho taxonomy Category dùng làm ảnh ca sĩ",
+    "modified": 1743500000
+}

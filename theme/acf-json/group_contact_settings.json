@@ -1,0 +1,86 @@
+{
+    "key": "group_contact_settings",
+    "title": "Liên Hệ Quảng Cáo",
+    "fields": [
+        {
+            "key": "field_tab_contact",
+            "label": "Liên Hệ",
+            "name": "",
+            "type": "tab",
+            "placement": "top"
+        },
+        {
+            "key": "field_contact_title",
+            "label": "Tiêu đề liên hệ",
+            "name": "contact_title",
+            "type": "text",
+            "default_value": "Liên Hệ Quảng Cáo"
+        },
+        {
+            "key": "field_contact_desc",
+            "label": "Mô tả",
+            "name": "contact_desc",
+            "type": "textarea",
+            "default_value": "Bạn muốn quảng cáo sản phẩm hoặc hợp tác cùng Roon Music?\nHãy liên hệ với chúng tôi qua các kênh bên dưới."
+        },
+        {
+            "key": "field_contact_methods",
+            "label": "Kênh liên hệ",
+            "name": "contact_methods",
+            "type": "repeater",
+            "layout": "block",
+            "button_label": "Thêm kênh",
+            "sub_fields": [
+                {
+                    "key": "field_contact_method_type",
+                    "label": "Loại",
+                    "name": "method_type",
+                    "type": "select",
+                    "choices": {
+                        "email": "Email",
+                        "facebook": "Facebook",
+                        "zalo": "Zalo",
+                        "phone": "Điện thoại"
+                    }
+                },
+                {
+                    "key": "field_contact_method_label",
+                    "label": "Tên kênh (VD: Email)",
+                    "name": "method_label",
+                    "type": "text"
+                },
+                {
+                    "key": "field_contact_method_value",
+                    "label": "Giá trị (VD: abc@...",
+                    "name": "method_value",
+                    "type": "text"
+                },
+                {
+                    "key": "field_contact_method_link",
+                    "label": "Link",
+                    "name": "method_link",
+                    "type": "url",
+                    "instructions": "Ví dụ: mailto:abc@... hoặc http://fb.com/..."
+                }
+            ]
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "options_page",
+                "operator": "==",
+                "value": "cai-dat-chung"
+            }
+        ]
+    ],
+    "menu_order": 1,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": "",
+    "active": true,
+    "description": "",
+    "modified": 1743438000
+}

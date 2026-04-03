@@ -11,7 +11,7 @@
             "required": 0,
             "conditional_logic": 0,
             "wrapper": {
-                "width": "100",
+                "width": "50",
                 "class": "",
                 "id": ""
             },
@@ -20,6 +20,22 @@
             "prepend": "",
             "append": "",
             "maxlength": ""
+        },
+        {
+            "key": "field_album_download_url_manual",
+            "label": "Link Download Album Thủ Công",
+            "name": "album_download_url_manual",
+            "type": "url",
+            "instructions": "Dán link Google Drive/NAS để khách hàng tải toàn bộ album. Sẽ hiện ở nút Tải Về.",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "placeholder": "https://..."
         },
         {
             "key": "field_6606cf9e2ae17",
@@ -49,7 +65,7 @@
                     "required": 1,
                     "conditional_logic": 0,
                     "wrapper": {
-                        "width": "30",
+                        "width": "40",
                         "class": "",
                         "id": ""
                     },
@@ -87,7 +103,7 @@
                     "required": 0,
                     "conditional_logic": 0,
                     "wrapper": {
-                        "width": "55",
+                        "width": "45",
                         "class": "",
                         "id": ""
                     },

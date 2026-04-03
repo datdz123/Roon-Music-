@@ -1,0 +1,111 @@
+{
+    "key": "group_roon_theme_settings",
+    "title": "Cài đặt chung (Roon Theme)",
+    "fields": [
+        {
+            "key": "field_tab_download",
+            "label": "Tải về (Download)",
+            "name": "",
+            "type": "tab",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "placement": "top",
+            "endpoint": 0
+        },
+        {
+            "key": "field_enable_album_download",
+            "label": "Bật nút tải toàn bộ Album",
+            "name": "enable_album_download",
+            "type": "true_false",
+            "instructions": "Nếu TẮT, nút tải ở trang chi tiết sẽ màu đen. Di chuột vào sẽ thông báo lỗi.",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "message": "Bật chức năng tải về cho phép khách tải nội dung từ NAS",
+            "default_value": 0,
+            "ui": 1,
+            "ui_on_text": "Bật",
+            "ui_off_text": "Tắt"
+        },
+        {
+            "key": "field_tab_listen_later",
+            "label": "Listen Later",
+            "name": "",
+            "type": "tab",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "placement": "top",
+            "endpoint": 0
+        },
+        {
+            "key": "field_listen_later_title",
+            "label": "Tiêu đề",
+            "name": "listen_later_title",
+            "type": "text",
+            "instructions": "Ví dụ: Listen Later. Để trống để ẩn khối này ngoài trang chủ.",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "Listen Later",
+            "placeholder": ""
+        },
+        {
+            "key": "field_listen_later_desc",
+            "label": "Mô tả",
+            "name": "listen_later_desc",
+            "type": "textarea",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "Your musical to do list",
+            "placeholder": "",
+            "maxlength": "",
+            "rows": 3,
+            "new_lines": ""
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "options_page",
+                "operator": "==",
+                "value": "cai-dat-chung"
+            }
+        ]
+    ],
+    "menu_order": 0,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": "",
+    "active": true,
+    "description": "",
+    "show_in_rest": 0,
+    "modified": 1743501000
+}

@@ -89,11 +89,15 @@
 
       pageTitles: {
         "home":         "",
-        "albums":       "My Albums",
-        "artists":      "My Artists",
-        "tracks":       "My Tracks",
+        "albums":       "Album Nhạc",
+        "artists":      "Ca Sĩ / Artist",
+        "tracks":       "Bài Hát / Track",
         "single-album": "",
         "search":       "",
+        "fav-albums":   "Album Yêu Thích",
+        "fav-artists":  "Ca Sĩ Yêu Thích",
+        "player":       "Trình Phát",
+        "contact":      "Liên Hệ Quảng Cáo",
         "genres":       "Genres",
         "live-radio":   "Live Radio",
         "listen-later": "Listen Later",
@@ -106,17 +110,35 @@
       },
 
       init() {
-        // Set home active on load
-        this.showPage("home", false);
+        // Đọc hash từ URL để tự động mở đúng trang sau redirect từ single.php
+        // Ví dụ: /#albums → mở trang Albums
+        let startPage = 'home';
+        if (window.location.hash) {
+          const hashPage = window.location.hash.replace('#', '');
+          if (hashPage && $('#page-' + hashPage).length > 0) {
+            startPage = hashPage;
+          }
+          // Xóa hash khỏi URL bar cho gọn
+          if (window.history && window.history.replaceState) {
+            window.history.replaceState(null, '', window.location.pathname + window.location.search);
+          }
+        }
+
+        // Khởi tạo history với trang ban đầu
+        this.history = [startPage];
+        this.historyIndex = 0;
+        this.showPage(startPage, false);
 
         // Mọi action liên kết (Sidebar / Stat grid) → Navigate
         $(document).on('click', '[data-page]', (e) => {
           e.preventDefault();
           const page = $(e.currentTarget).data('page');
-          if ($('#page-' + page).length === 0 && !window.location.pathname.endsWith('/')) {
-             // Dành cho trường hợp đang ở trong file single.php, muốn back về Home
-             window.location.href = '/'; 
-             return;
+          // Nếu DOM không chứa SPA pages (đang ở single.php hoặc trang khác)
+          // thì redirect về homepage với hash để RoonNav tự mở đúng tab
+          if ($('#page-' + page).length === 0) {
+            const homeUrl = (window.roonHomeUrl || '/') + '#' + page;
+            window.location.href = homeUrl;
+            return;
           }
           this.navigate(page);
         });
@@ -219,11 +241,11 @@
         }
 
         // Update sidebar active
-        $('.roon-nav-item').removeClass('text-roon-blue bg-blue-50 font-medium');
-        $(`[data-page="${page}"]`).addClass('text-roon-blue bg-blue-50 font-medium');
+        $('.roon-nav-item').removeClass('text-roon-blue bg-blue-50/80 hover:bg-blue-100/60').addClass('text-gray-800');
+        $(`[data-page="${page}"]`).removeClass('text-gray-800').addClass('text-roon-blue bg-blue-50/80 hover:bg-blue-100/60');
         // Remove stroke override from icons
-        $('[data-page] svg').removeClass('stroke-roon-blue');
-        $(`[data-page="${page}"] svg`).addClass('stroke-roon-blue');
+        $('[data-page] svg').removeClass('stroke-roon-blue').addClass('stroke-gray-700');
+        $(`[data-page="${page}"] svg`).removeClass('stroke-gray-700').addClass('stroke-roon-blue');
 
         // Update header title
         let title = this.pageTitles[page] || '';
@@ -265,8 +287,10 @@
       audio: null,
       isPlaying: false,
       isMuted: false,
+      isShuffle: false,
+      repeatMode: 'none', // 'none' | 'all' | 'one'
       volumeBeforeMute: 0.5,
-      playlist: [],
+      playlist: [],       // [{url, title, artist, cover, albumUrl}]
       currentTrackIndex: 0,
       affiliateUrl: "",
       dailyAffiliateLimit: 2,
@@ -317,19 +341,37 @@
         // Play/Pause
         $('#player-play-pause').on('click', () => this.togglePlay());
 
-        // Prev / Next (placeholder — future playlist)
-        $('#player-prev').on('click', () => { this.audio.currentTime = 0; });
-        $('#player-next').on('click', () => { /* next track */ });
+        // Prev
+        $('#player-prev').on('click', () => this.playPrev());
+
+        // Next
+        $('#player-next').on('click', () => this.playNext());
 
         // Mute
         $('#player-mute').on('click', () => this.toggleMute());
 
-        // Shuffle / Repeat (visual toggle only)
-        $('#player-shuffle').on('click', function () {
-          $(this).toggleClass('text-roon-blue text-gray-400');
+        // Shuffle (thực sự đảo ngẫu nhiên)
+        $('#player-shuffle').on('click', () => {
+          this.isShuffle = !this.isShuffle;
+          $('#player-shuffle').toggleClass('text-roon-blue', this.isShuffle)
+                              .toggleClass('text-gray-400', !this.isShuffle);
         });
-        $('#player-repeat').on('click', function () {
-          $(this).toggleClass('text-roon-blue text-gray-400');
+
+        // Repeat: none → all → one → none
+        $('#player-repeat').on('click', () => {
+          if (this.repeatMode === 'none') {
+            this.repeatMode = 'all';
+            $('#player-repeat').addClass('text-roon-blue').removeClass('text-gray-400');
+            $('#player-repeat').attr('title', 'Lặp tất cả');
+          } else if (this.repeatMode === 'all') {
+            this.repeatMode = 'one';
+            $('#player-repeat').addClass('text-roon-blue');
+            $('#player-repeat').attr('title', 'Lặp 1 bài');
+          } else {
+            this.repeatMode = 'none';
+            $('#player-repeat').removeClass('text-roon-blue').addClass('text-gray-400');
+            $('#player-repeat').attr('title', 'Repeat');
+          }
         });
 
         // Heart
@@ -340,12 +382,27 @@
       bindTracklistClicks() {
         // Tracklist play buttons (single album + track rows)
         $(document).on('click', '[data-stream-url][data-track-title]', (e) => {
-          const $btn    = $(e.currentTarget);
-          const url     = $btn.data('stream-url');
-          const title   = $btn.data('track-title');
-          const artist  = $btn.data('track-artist') || '';
-          const cover   = $btn.data('track-cover') || 'https://placehold.co/48x48/e5e5e5/999?text=♫';
-          this.loadTrack(url, title, artist, cover);
+          e.preventDefault();
+          e.stopPropagation();
+          const $btn     = $(e.currentTarget);
+          const url      = $btn.data('stream-url');
+          const title    = $btn.data('track-title');
+          const artist   = $btn.data('track-artist') || '';
+          const cover    = $btn.data('track-cover') || 'https://placehold.co/48x48/e5e5e5/999?text=♫';
+          const albumUrl = $btn.data('track-album-url') || '';
+
+          // Build playlist từ tất cả nút play hiện có trong DOM
+          const allBtns = $('[data-stream-url][data-track-title]').toArray();
+          this.playlist = allBtns.map((b) => ({
+            url:      $(b).data('stream-url'),
+            title:    $(b).data('track-title'),
+            artist:   $(b).data('track-artist') || '',
+            cover:    $(b).data('track-cover') || 'https://placehold.co/48x48/e5e5e5/999?text=♫',
+            albumUrl: $(b).data('track-album-url') || '',
+          }));
+          this.currentTrackIndex = allBtns.indexOf(e.currentTarget);
+
+          this.loadTrack(url, title, artist, cover, albumUrl);
         });
       },
       bindAudioEvents() {
@@ -363,8 +420,15 @@
         });
 
         audio.addEventListener('ended', () => {
-          this.isPlaying = false;
-          this.updatePlayUI();
+          if (this.repeatMode === 'one') {
+            this.audio.currentTime = 0;
+            this.audio.play().catch(() => {});
+          } else if (this.repeatMode === 'all' || this.isShuffle) {
+            this.playNext();
+          } else {
+            this.isPlaying = false;
+            this.updatePlayUI();
+          }
         });
 
         audio.addEventListener('play',  () => { this.isPlaying = true;  this.updatePlayUI(); });
@@ -408,17 +472,37 @@
         });
       },
 
-      loadTrack(url, title, artist, cover) {
+      playNext() {
+        if (this.playlist.length === 0) return;
+        let idx;
+        if (this.isShuffle) {
+          idx = Math.floor(Math.random() * this.playlist.length);
+        } else {
+          idx = (this.currentTrackIndex + 1) % this.playlist.length;
+        }
+        this.currentTrackIndex = idx;
+        const t = this.playlist[idx];
+        this.loadTrack(t.url, t.title, t.artist, t.cover, t.albumUrl);
+      },
+
+      playPrev() {
+        if (this.playlist.length === 0) { this.audio.currentTime = 0; return; }
+        let idx = (this.currentTrackIndex - 1 + this.playlist.length) % this.playlist.length;
+        this.currentTrackIndex = idx;
+        const t = this.playlist[idx];
+        this.loadTrack(t.url, t.title, t.artist, t.cover, t.albumUrl);
+      },
+
+      loadTrack(url, title, artist, cover, albumUrl) {
         if (!url || url === '#') {
-          // Mock: just update UI
-          this.updateTrackInfo(title, artist, cover);
+          this.updateTrackInfo(title, artist, cover, albumUrl);
           this.fakePlay();
           return;
         }
         this.audio.src = url;
         this.audio.load();
         this.audio.play().catch(() => {});
-        this.updateTrackInfo(title, artist, cover);
+        this.updateTrackInfo(title, artist, cover, albumUrl);
       },
 
       fakePlay() {
@@ -427,10 +511,22 @@
         this.updatePlayUI();
       },
 
-      updateTrackInfo(title, artist, cover) {
-        $('#player-track-title').text(title || 'Unknown track');
+      updateTrackInfo(title, artist, cover, albumUrl) {
+        // Dùng link thay vì <p> trong HTML mới
+        const $titleEl = $('#player-track-title-link');
+        if ($titleEl.length) {
+          $titleEl.text(title || 'Unknown track');
+          $titleEl.attr('href', albumUrl || '#');
+        } else {
+          $('#player-track-title').text(title || 'Unknown track');
+        }
         $('#player-track-artist').text(artist || '—');
         $('#player-cover').attr('src', cover);
+        // Cập nhật link ảnh cover về album
+        const $albumLink = $('#player-album-link');
+        if ($albumLink.length) {
+          $albumLink.attr('href', albumUrl || '#');
+        }
       },
 
       togglePlay() {

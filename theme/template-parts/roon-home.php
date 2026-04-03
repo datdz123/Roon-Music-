@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Template Part: Roon Home
  * @package roon
@@ -12,12 +12,30 @@ $stats = [
     ['label' => 'COMPOSERS', 'count' => $library_stats['composers'] ?? 0, 'icon' => 'composers'],
 ];
 
-$recent_albums = function_exists('roon_get_library_albums') ? roon_get_library_albums(5) : [];
-$listen_later = array_slice($recent_albums, 0, 3);
+$recent_albums = function_exists('roon_get_library_albums') ? roon_get_library_albums(10) : [];
+$popular_albums = function_exists('roon_get_popular_albums') ? roon_get_popular_albums(10) : array_slice($recent_albums, 0, 10);
+
+$artist_terms = get_categories(array('hide_empty' => true, 'orderby' => 'count', 'order' => 'DESC', 'number' => 10));
+$popular_artists = [];
+foreach ($artist_terms as $term) {
+    $name = trim($term->name);
+    if ('' === $name) continue;
+    $words = preg_split('/\s+/', $name);
+    $initials = '';
+    foreach (array_slice($words, 0, 2) as $word) {
+        $initials .= function_exists('mb_substr') ? mb_substr($word, 0, 1) : substr($word, 0, 1);
+    }
+    $popular_artists[] = array(
+        'name' => $name,
+        'initials' => strtoupper($initials),
+        'count' => $term->count,
+    );
+}
+
 ?>
 
 <div id="page-home" class="roon-page font-inter">
-    <h1 class="text-[38px] font-bold tracking-tight text-gray-900 mb-6 leading-tight">Hi, ROON</h1>
+    <h1 class="text-[38px] font-bold tracking-tight text-gray-900 mb-6 leading-tight">Xin chào !</h1>
 
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-8">
         <?php foreach ($stats as $stat) : ?>
@@ -53,13 +71,14 @@ $listen_later = array_slice($recent_albums, 0, 3);
         <?php endforeach; ?>
     </div>
 
+    <!-- Mới Cập Nhật -->
     <div class="bg-roon-blue rounded-xl px-5 py-5 overflow-hidden">
         <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
             <div class="flex items-center gap-5 flex-wrap">
-                <h2 class="text-[16px] font-semibold text-white m-0">Recent activity</h2>
+                <h2 class="text-[16px] font-semibold text-white m-0">Mới cập nhật</h2>
                 <div class="flex items-center gap-1" id="recent-tabs">
-                    <button data-tab="played" class="roon-tab text-white bg-white/15 px-2.5 py-1 rounded-md text-[12px] font-semibold tracking-wider cursor-pointer border-none transition-all">PLAYED</button>
-                    <button data-tab="added" class="roon-tab text-white/60 px-2.5 py-1 rounded-md text-[12px] font-semibold tracking-wider cursor-pointer border-none hover:text-white/90 transition-all">ADDED</button>
+                    <button data-tab="played" class="roon-tab text-white bg-white/15 px-2.5 py-1 rounded-md text-[12px] font-semibold tracking-wider cursor-pointer border-none transition-all">ALBUM MỚI PHÁT</button>
+                    <button data-tab="added" class="roon-tab text-white/60 px-2.5 py-1 rounded-md text-[12px] font-semibold tracking-wider cursor-pointer border-none hover:text-white/90 transition-all">ALBUM MỚI THÊM</button>
                 </div>
             </div>
             <div class="flex items-center gap-1.5">
@@ -69,13 +88,13 @@ $listen_later = array_slice($recent_albums, 0, 3);
                 <button id="btn-recent-next" class="flex items-center justify-center w-7 h-7 rounded-md text-white/80 hover:bg-white/15 hover:text-white transition-colors">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
                 </button>
-                <button class="hidden sm:block text-[11px] font-semibold tracking-widest text-white/60 bg-transparent border-none cursor-pointer px-2 py-1 rounded hover:text-white hover:bg-white/10 transition-colors">MORE</button>
+                <button data-page="albums" class="hidden sm:block text-[11px] font-semibold tracking-widest text-white/60 bg-transparent border-none cursor-pointer px-2 py-1 rounded hover:text-white hover:bg-white/10 transition-colors">XEM THÊM <svg width="12" height="12" class="inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></button>
             </div>
         </div>
 
         <div id="recent-albums-grid" class="flex gap-3.5 overflow-x-auto pb-1" style="scrollbar-width:none;">
             <?php foreach ($recent_albums as $album) : ?>
-            <a class="roon-album-card flex-shrink-0 w-36 cursor-pointer group no-underline" href="<?php echo esc_url($album['url']); ?>">
+            <a class="roon-album-card flex-shrink-0 w-36 cursor-pointer group no-underline" href="<?php echo esc_url($album['url']); ?>" title="<?php echo esc_attr($album['title']); ?>">
                 <div class="relative w-full pb-[100%] rounded-lg overflow-hidden bg-gray-700">
                     <img src="<?php echo esc_url($album['cover']); ?>" alt="<?php echo esc_attr($album['title']); ?>" class="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy"/>
                     <div class="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex items-center justify-center transition-all duration-200">
@@ -91,14 +110,35 @@ $listen_later = array_slice($recent_albums, 0, 3);
         </div>
     </div>
 
-    <div class="mt-7">
-        <div class="flex items-center justify-between mb-3.5">
-            <h2 class="text-[18px] font-semibold text-gray-900 m-0">Listen later</h2>
-            <button class="text-[12px] font-semibold tracking-widest text-gray-400 bg-transparent border-none cursor-pointer px-2 py-1 rounded hover:text-gray-700 hover:bg-gray-100 transition-colors">MORE</button>
+    <?php 
+    $ll_title = function_exists('get_field') ? get_field('listen_later_title', 'option') : '';
+    $ll_desc  = function_exists('get_field') ? get_field('listen_later_desc', 'option') : '';
+    if (!empty($ll_title)) : 
+        $title_parts = explode(' ', $ll_title, 2);
+        $title_html  = esc_html($title_parts[0]) . (isset($title_parts[1]) ? '<br>' . esc_html($title_parts[1]) : '');
+    ?>
+    <div class="mt-8 bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 sm:p-8 flex flex-col sm:flex-row items-center sm:items-start justify-center sm:justify-start gap-6 border border-purple-100/50">
+        <div class="text-center sm:text-left">
+            <h2 class="text-3xl sm:text-4xl font-serif text-gray-900 leading-none"><?php echo $title_html; ?></h2>
         </div>
+        <div class="hidden sm:block w-px h-16 bg-gradient-to-b from-transparent via-purple-200 to-transparent"></div>
+        <div class="text-center sm:text-left flex-1">
+            <h3 class="text-lg sm:text-xl font-medium text-gray-900 mb-1.5"><?php echo nl2br(esc_html($ll_desc)); ?></h3>
+            <p class="text-sm text-gray-500 max-w-lg mb-0 flex items-center justify-center sm:justify-start">Click the <svg class="inline w-4 h-4 text-gray-400 mx-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg> button on any album, artist or track to add it to your Listen Later</p>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- Album Listen Later / Views -->
+    <div class="mt-8">
+        <div class="flex items-center justify-between mb-3.5">
+            <h2 class="text-[18px] font-semibold text-gray-900 m-0">Album có lượt xem nhiều</h2>
+            <button data-page="fav-albums" class="text-[12px] font-semibold tracking-wide text-gray-400 bg-transparent border-none cursor-pointer px-2 py-1 rounded hover:text-roon-blue hover:bg-blue-50 transition-colors">XEM THÊM <svg width="12" height="12" class="inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></button>
+        </div>
+        <?php if (!empty($popular_albums)) : ?>
         <div class="flex gap-4 overflow-x-auto pb-1" style="scrollbar-width:none;">
-            <?php foreach ($listen_later as $item) : ?>
-            <a class="flex-shrink-0 w-36 cursor-pointer group no-underline" href="<?php echo esc_url($item['url']); ?>">
+            <?php foreach ($popular_albums as $item) : ?>
+            <a class="flex-shrink-0 w-36 cursor-pointer group no-underline" href="<?php echo esc_url($item['url']); ?>" title="<?php echo esc_attr($item['title']); ?>">
                 <div class="relative w-full pb-[100%] rounded-lg overflow-hidden bg-gray-200">
                     <img src="<?php echo esc_url($item['cover']); ?>" alt="<?php echo esc_attr($item['title']); ?>" class="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy"/>
                     <div class="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex items-center justify-center transition-all duration-200">
@@ -108,9 +148,40 @@ $listen_later = array_slice($recent_albums, 0, 3);
                     </div>
                 </div>
                 <p class="mt-2 mb-0.5 text-[12.5px] font-medium text-gray-900 truncate leading-snug"><?php echo esc_html($item['title']); ?></p>
-                <p class="text-[11.5px] text-gray-500 truncate m-0"><?php echo esc_html($item['artist']); ?></p>
+                <div class="flex items-center justify-between">
+                    <p class="text-[11.5px] text-gray-500 truncate m-0 flex-1 pr-1"><?php echo esc_html($item['artist']); ?></p>
+                    <span class="text-[10px] text-gray-400 bg-gray-100 px-1 rounded flex-shrink-0"><?php echo isset($item['views']) ? esc_html($item['views']) : 0; ?> view</span>
+                </div>
             </a>
             <?php endforeach; ?>
         </div>
+        <?php else : ?>
+            <p class="text-sm text-gray-400">Chưa có album nào được xem.</p>
+        <?php endif; ?>
+    </div>
+
+    <!-- Ca sĩ nghe nhiều -->
+    <div class="mt-8">
+        <div class="flex items-center justify-between mb-3.5">
+            <h2 class="text-[18px] font-semibold text-gray-900 m-0">Ca sỹ nghe nhiều</h2>
+            <button data-page="fav-artists" class="text-[12px] font-semibold tracking-wide text-gray-400 bg-transparent border-none cursor-pointer px-2 py-1 rounded hover:text-roon-blue hover:bg-blue-50 transition-colors">XEM THÊM <svg width="12" height="12" class="inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></button>
+        </div>
+        <?php if (!empty($popular_artists)) : ?>
+        <div class="flex gap-5 overflow-x-auto pb-2" style="scrollbar-width:none;">
+            <?php foreach ($popular_artists as $artist) : ?>
+            <div data-page="fav-artists" class="group flex flex-col items-center text-center flex-shrink-0 w-28 cursor-pointer">
+                <!-- Avatar -->
+                <div class="w-full pb-[100%] rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 mb-3 relative overflow-hidden shadow-sm group-hover:shadow-md transition-shadow duration-200 group-hover:scale-[1.03]" title="<?php echo esc_attr($artist['name']); ?>">
+                    <span class="absolute inset-0 flex items-center justify-center text-2xl font-bold text-indigo-400/70"><?php echo esc_html($artist['initials']); ?></span>
+                </div>
+                <!-- Name -->
+                <p class="text-[13px] font-semibold text-gray-800 leading-snug mb-0.5 truncate w-full px-1"><?php echo esc_html($artist['name']); ?></p>
+                <p class="text-[11px] text-gray-400 truncate w-full"><?php echo esc_html($artist['count']); ?> album</p>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <?php else : ?>
+            <p class="text-sm text-gray-400">Chưa có dữ liệu ca sĩ.</p>
+        <?php endif; ?>
     </div>
 </div>

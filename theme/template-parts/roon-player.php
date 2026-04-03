@@ -13,16 +13,16 @@
 
     <!-- ── Left: Track Info (260px) ── -->
     <div class="flex min-w-0 flex-1 items-center gap-2.5 md:w-[260px] md:flex-shrink-0 md:flex-none">
-        <!-- Thumb -->
-        <div class="w-11 h-11 rounded-md overflow-hidden flex-shrink-0 bg-gray-200">
+        <!-- Thumb (clickable → về trang album) -->
+        <a id="player-album-link" href="#" class="block w-11 h-11 rounded-md overflow-hidden flex-shrink-0 bg-gray-200 no-underline cursor-pointer hover:opacity-80 transition-opacity" title="Xem album">
             <img id="player-cover"
                  src="https://placehold.co/48x48/e5e5e5/999?text=♫"
                  alt="Now playing"
                  class="w-full h-full object-cover"/>
-        </div>
+        </a>
         <!-- Info -->
         <div class="flex flex-col min-w-0 flex-1">
-            <p id="player-track-title" class="text-[13px] font-medium text-gray-900 truncate m-0">Chọn bài để phát</p>
+            <a id="player-track-title-link" href="#" class="text-[13px] font-medium text-gray-900 truncate m-0 no-underline hover:text-roon-blue transition-colors cursor-pointer">Chọn bài để phát</a>
             <p id="player-track-artist" class="text-[11.5px] text-gray-500 truncate m-0 mt-0.5">—</p>
         </div>
         <!-- Heart -->

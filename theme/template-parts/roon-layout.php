@@ -24,6 +24,9 @@
             <?php get_template_part('template-parts/roon-tracks'); ?>
             <?php get_template_part('template-parts/roon-single-album'); ?>
             <?php get_template_part('template-parts/roon-search'); ?>
+            <?php get_template_part('template-parts/roon-fav-albums'); ?>
+            <?php get_template_part('template-parts/roon-fav-artists'); ?>
+            <?php get_template_part('template-parts/roon-contact'); ?>
         </div>
     </div>
 
