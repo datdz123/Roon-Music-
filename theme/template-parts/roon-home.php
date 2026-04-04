@@ -15,7 +15,7 @@ $stats = [
 $recent_albums = function_exists('roon_get_library_albums') ? roon_get_library_albums(10) : [];
 $popular_albums = function_exists('roon_get_popular_albums') ? roon_get_popular_albums(10) : array_slice($recent_albums, 0, 10);
 
-$artist_terms = get_categories(array('hide_empty' => true, 'orderby' => 'count', 'order' => 'DESC', 'number' => 10));
+$artist_terms = get_categories(array('hide_empty' => true));
 $popular_artists = [];
 foreach ($artist_terms as $term) {
     $name = trim($term->name);
@@ -25,12 +25,34 @@ foreach ($artist_terms as $term) {
     foreach (array_slice($words, 0, 2) as $word) {
         $initials .= function_exists('mb_substr') ? mb_substr($word, 0, 1) : substr($word, 0, 1);
     }
+    
+    // Tính tổng lượt nghe (views) của ca sĩ
+    $artist_views = 0;
+    $artist_posts = get_posts(array(
+        'post_type'      => 'post',
+        'category_name'  => $term->slug,
+        'posts_per_page' => -1,
+        'fields'         => 'ids'
+    ));
+    foreach ($artist_posts as $p_id) {
+        $artist_views += (int) get_post_meta($p_id, 'roon_view_count', true);
+    }
+
     $popular_artists[] = array(
-        'name' => $name,
+        'name'     => $name,
         'initials' => strtoupper($initials),
-        'count' => $term->count,
+        'count'    => $term->count, // số album nếu cần
+        'views'    => $artist_views,
     );
 }
+
+// Sắp xếp theo lượt nghe giảm dần
+usort($popular_artists, function($a, $b) {
+    return $b['views'] <=> $a['views'];
+});
+
+// Lấy 10 ca sĩ đầu tiên
+$popular_artists = array_slice($popular_artists, 0, 10);
 
 ?>
 
@@ -92,23 +114,71 @@ foreach ($artist_terms as $term) {
             </div>
         </div>
 
-        <div id="recent-albums-grid" class="flex gap-3.5 overflow-x-auto pb-1" style="scrollbar-width:none;">
-            <?php foreach ($recent_albums as $album) : ?>
-            <a class="roon-album-card flex-shrink-0 w-36 cursor-pointer group no-underline" href="<?php echo esc_url($album['url']); ?>" title="<?php echo esc_attr($album['title']); ?>">
-                <div class="relative w-full pb-[100%] rounded-lg overflow-hidden bg-gray-700">
-                    <img src="<?php echo esc_url($album['cover']); ?>" alt="<?php echo esc_attr($album['title']); ?>" class="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy"/>
-                    <div class="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex items-center justify-center transition-all duration-200">
-                        <button class="flex items-center justify-center w-10 h-10 rounded-full bg-roon-blue/90 text-white border-none cursor-pointer scale-0 group-hover:scale-100 transition-transform duration-200 pl-0.5">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                        </button>
+        <div id="recent-albums-wrap">
+            <div id="grid-played" class="recent-albums-grid flex gap-3.5 overflow-x-auto pb-1" style="scrollbar-width:none;">
+                <?php 
+                // Album mới phát (giả lập bằng những album random hoặc phổ biến)
+                $played_albums = function_exists('roon_get_popular_albums') ? roon_get_popular_albums(10) : $recent_albums; 
+                shuffle($played_albums); // Shuffle để có cảm giác khác biệt
+                foreach ($played_albums as $album) : ?>
+                <a class="roon-album-card flex-shrink-0 w-36 cursor-pointer group no-underline" href="<?php echo esc_url($album['url']); ?>" title="<?php echo esc_attr($album['title']); ?>">
+                    <div class="relative w-full pb-[100%] rounded-lg overflow-hidden bg-gray-700">
+                        <img src="<?php echo esc_url($album['cover']); ?>" alt="<?php echo esc_attr($album['title']); ?>" class="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy"/>
+                        <div class="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex items-center justify-center transition-all duration-200">
+                            <button class="flex items-center justify-center w-10 h-10 rounded-full bg-roon-blue/90 text-white border-none cursor-pointer scale-0 group-hover:scale-100 transition-transform duration-200 pl-0.5">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                            </button>
+                        </div>
                     </div>
-                </div>
-                <p class="mt-2 mb-0.5 text-[12.5px] font-medium text-white truncate leading-snug"><?php echo esc_html($album['title']); ?></p>
-                <p class="text-[11.5px] text-white/65 truncate m-0"><?php echo esc_html($album['artist']); ?></p>
-            </a>
-            <?php endforeach; ?>
+                    <p class="mt-2 mb-0.5 text-[12.5px] font-medium text-white truncate leading-snug"><?php echo esc_html($album['title']); ?></p>
+                    <p class="text-[11.5px] text-white/65 truncate m-0"><?php echo esc_html($album['artist']); ?></p>
+                </a>
+                <?php endforeach; ?>
+            </div>
+
+            <div id="grid-added" class="recent-albums-grid flex gap-3.5 overflow-x-auto pb-1 hidden" style="scrollbar-width:none;">
+                <?php foreach ($recent_albums as $album) : ?>
+                <a class="roon-album-card flex-shrink-0 w-36 cursor-pointer group no-underline" href="<?php echo esc_url($album['url']); ?>" title="<?php echo esc_attr($album['title']); ?>">
+                    <div class="relative w-full pb-[100%] rounded-lg overflow-hidden bg-gray-700">
+                        <img src="<?php echo esc_url($album['cover']); ?>" alt="<?php echo esc_attr($album['title']); ?>" class="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy"/>
+                        <div class="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex items-center justify-center transition-all duration-200">
+                            <button class="flex items-center justify-center w-10 h-10 rounded-full bg-roon-blue/90 text-white border-none cursor-pointer scale-0 group-hover:scale-100 transition-transform duration-200 pl-0.5">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <p class="mt-2 mb-0.5 text-[12.5px] font-medium text-white truncate leading-snug"><?php echo esc_html($album['title']); ?></p>
+                    <p class="text-[11.5px] text-white/65 truncate m-0"><?php echo esc_html($album['artist']); ?></p>
+                </a>
+                <?php endforeach; ?>
+            </div>
         </div>
     </div>
+
+    <!-- Script for Recently Tab -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabs = document.querySelectorAll('.roon-tab');
+            const grids = document.querySelectorAll('.recent-albums-grid');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const targetId = 'grid-' + this.dataset.tab;
+                    
+                    tabs.forEach(t => {
+                        t.classList.remove('bg-white/15', 'text-white');
+                        t.classList.add('text-white/60');
+                    });
+                    this.classList.remove('text-white/60');
+                    this.classList.add('bg-white/15', 'text-white');
+
+                    grids.forEach(g => g.classList.add('hidden'));
+                    const targetGrid = document.getElementById(targetId);
+                    if (targetGrid) targetGrid.classList.remove('hidden');
+                });
+            });
+        });
+    </script>
 
     <?php 
     $ll_title = function_exists('get_field') ? get_field('listen_later_title', 'option') : '';
@@ -130,35 +200,7 @@ foreach ($artist_terms as $term) {
     <?php endif; ?>
 
     <!-- Album Listen Later / Views -->
-    <div class="mt-8">
-        <div class="flex items-center justify-between mb-3.5">
-            <h2 class="text-[18px] font-semibold text-gray-900 m-0">Album có lượt xem nhiều</h2>
-            <button data-page="fav-albums" class="text-[12px] font-semibold tracking-wide text-gray-400 bg-transparent border-none cursor-pointer px-2 py-1 rounded hover:text-roon-blue hover:bg-blue-50 transition-colors">XEM THÊM <svg width="12" height="12" class="inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></button>
-        </div>
-        <?php if (!empty($popular_albums)) : ?>
-        <div class="flex gap-4 overflow-x-auto pb-1" style="scrollbar-width:none;">
-            <?php foreach ($popular_albums as $item) : ?>
-            <a class="flex-shrink-0 w-36 cursor-pointer group no-underline" href="<?php echo esc_url($item['url']); ?>" title="<?php echo esc_attr($item['title']); ?>">
-                <div class="relative w-full pb-[100%] rounded-lg overflow-hidden bg-gray-200">
-                    <img src="<?php echo esc_url($item['cover']); ?>" alt="<?php echo esc_attr($item['title']); ?>" class="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy"/>
-                    <div class="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex items-center justify-center transition-all duration-200">
-                        <button class="flex items-center justify-center w-10 h-10 rounded-full bg-roon-blue/90 text-white border-none cursor-pointer scale-0 group-hover:scale-100 transition-transform duration-200 pl-0.5">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                        </button>
-                    </div>
-                </div>
-                <p class="mt-2 mb-0.5 text-[12.5px] font-medium text-gray-900 truncate leading-snug"><?php echo esc_html($item['title']); ?></p>
-                <div class="flex items-center justify-between">
-                    <p class="text-[11.5px] text-gray-500 truncate m-0 flex-1 pr-1"><?php echo esc_html($item['artist']); ?></p>
-                    <span class="text-[10px] text-gray-400 bg-gray-100 px-1 rounded flex-shrink-0"><?php echo isset($item['views']) ? esc_html($item['views']) : 0; ?> view</span>
-                </div>
-            </a>
-            <?php endforeach; ?>
-        </div>
-        <?php else : ?>
-            <p class="text-sm text-gray-400">Chưa có album nào được xem.</p>
-        <?php endif; ?>
-    </div>
+    <?php get_template_part('template-parts/roon', 'popular-albums'); ?>
 
     <!-- Ca sĩ nghe nhiều -->
     <div class="mt-8">
@@ -176,7 +218,7 @@ foreach ($artist_terms as $term) {
                 </div>
                 <!-- Name -->
                 <p class="text-[13px] font-semibold text-gray-800 leading-snug mb-0.5 truncate w-full px-1"><?php echo esc_html($artist['name']); ?></p>
-                <p class="text-[11px] text-gray-400 truncate w-full"><?php echo esc_html($artist['count']); ?> album</p>
+                <p class="text-[11px] text-gray-400 truncate w-full"><?php echo number_format_i18n($artist['views']); ?> lượt nghe</p>
             </div>
             <?php endforeach; ?>
         </div>

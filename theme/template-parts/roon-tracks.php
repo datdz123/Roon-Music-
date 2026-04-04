@@ -11,13 +11,10 @@ $tracks = function_exists('roon_get_library_tracks') ? roon_get_library_tracks()
     <div class="flex items-end justify-between mb-4 flex-wrap gap-3">
         <div>
             <h1 class="text-[40px] font-bold tracking-tight text-gray-900 leading-tight m-0">
-                My Tracks <span class="text-[16px] font-normal text-gray-400 ml-2"><?php echo count($tracks); ?> tracks</span>
+                Tất cả bài hát <span class="text-[16px] font-normal text-gray-400 ml-2"><?php echo count($tracks); ?> tracks</span>
             </h1>
         </div>
-        <button class="flex items-center gap-2 bg-roon-blue text-white text-[13px] font-semibold px-5 py-2 rounded-full border-none cursor-pointer hover:bg-roon-indigo transition-colors">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-            Play now
-        </button>
+       
     </div>
 
     <!-- Search + Filter bar -->
@@ -97,6 +94,17 @@ $tracks = function_exists('roon_get_library_tracks') ? roon_get_library_tracks()
         <svg class="mx-auto mb-3" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <p class="text-sm">Không tìm thấy bài hát nào</p>
     </div>
+
+    <!-- Phân trang -->
+    <div id="tracks-pagination" class="mt-8 flex justify-center gap-2 items-center hidden pb-8">
+        <button id="tracks-prev-page" class="flex items-center justify-center w-8 h-8 rounded-md text-gray-500 hover:bg-gray-100 transition-colors bg-transparent border-none cursor-pointer disabled:opacity-50" disabled>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div id="tracks-page-numbers" class="flex items-center gap-1"></div>
+        <button id="tracks-next-page" class="flex items-center justify-center w-8 h-8 rounded-md text-gray-500 hover:bg-gray-100 transition-colors bg-transparent border-none cursor-pointer disabled:opacity-50">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+    </div>
 </div>
 
 <script>
@@ -109,9 +117,18 @@ $tracks = function_exists('roon_get_library_tracks') ? roon_get_library_tracks()
     var sortCol     = null;
     var sortAsc     = true;
 
+    var currentPage = 1;
+    var itemsPerPage = 10;
+
+    var paginationWrapper = document.getElementById('tracks-pagination');
+    var prevBtn = document.getElementById('tracks-prev-page');
+    var nextBtn = document.getElementById('tracks-next-page');
+    var pageNumbers = document.getElementById('tracks-page-numbers');
+
     function filterAndSort() {
         var q = searchInput ? searchInput.value.trim().toLowerCase() : '';
         var rows = Array.from(list.querySelectorAll('.roon-track-row'));
+        var filteredRows = [];
 
         // Sort
         if (sortCol) {
@@ -120,24 +137,85 @@ $tracks = function_exists('roon_get_library_tracks') ? roon_get_library_tracks()
                 var vb = (b.dataset[sortCol] || '');
                 return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
             });
-            rows.forEach(function(r) { list.appendChild(r); });
         }
 
         // Filter
-        var visible = 0;
         rows.forEach(function(row) {
             var show = !q ||
                 (row.dataset.title  || '').includes(q) ||
                 (row.dataset.album  || '').includes(q) ||
                 (row.dataset.artist || '').includes(q);
-            row.style.display = show ? '' : 'none';
-            if (show) visible++;
+            
+            if (show) {
+                filteredRows.push(row);
+            } else {
+                row.style.display = 'none';
+            }
+            list.appendChild(row); // Update DOM order
         });
-        if (countEl) countEl.textContent = visible + ' bài';
-        if (emptyEl) emptyEl.classList.toggle('hidden', visible > 0);
+        
+        var visibleCount = filteredRows.length;
+        if (countEl) countEl.textContent = visibleCount + ' bài';
+        if (emptyEl) emptyEl.classList.toggle('hidden', visibleCount > 0);
+
+        // Render Pagination
+        var totalPages = Math.ceil(visibleCount / itemsPerPage);
+        if (currentPage > totalPages) currentPage = Math.max(1, totalPages);
+
+        if (paginationWrapper) {
+            if (totalPages > 1) {
+                paginationWrapper.classList.remove('hidden');
+            } else {
+                paginationWrapper.classList.add('hidden');
+            }
+        }
+
+        if (prevBtn) prevBtn.disabled = currentPage === 1;
+        if (nextBtn) nextBtn.disabled = currentPage === totalPages;
+
+        if (pageNumbers) {
+            pageNumbers.innerHTML = '';
+            for (let i = 1; i <= totalPages; i++) {
+                if (totalPages > 6 && i !== 1 && i !== totalPages && Math.abs(i - currentPage) > 1) {
+                    if (Math.abs(i - currentPage) === 2) {
+                        const dot = document.createElement('span');
+                        dot.className = 'text-gray-400 px-1';
+                        dot.textContent = '...';
+                        pageNumbers.appendChild(dot);
+                    }
+                    continue;
+                }
+                const btn = document.createElement('button');
+                btn.className = 'w-8 h-8 rounded-md border-none cursor-pointer text-[13px] font-medium transition-colors ';
+                btn.className += i === currentPage ? 'bg-gray-800 text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100 hover:text-gray-900';
+                btn.textContent = i;
+                if (i === currentPage) { btn.disabled = true; }
+                btn.onclick = function() {
+                    currentPage = i;
+                    filterAndSort();
+                    var content = document.getElementById('roon-content');
+                    if(content) content.scrollTop = 0;
+                };
+                pageNumbers.appendChild(btn);
+            }
+        }
+
+        // Apply pages
+        filteredRows.forEach(function(row, index) {
+            var start = (currentPage - 1) * itemsPerPage;
+            var end = start + itemsPerPage;
+            if (index >= start && index < end) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
     }
 
-    if (searchInput) searchInput.addEventListener('input', filterAndSort);
+    if (prevBtn) prevBtn.addEventListener('click', function() { if (currentPage > 1) { currentPage--; filterAndSort(); } });
+    if (nextBtn) nextBtn.addEventListener('click', function() { currentPage++; filterAndSort(); });
+
+    if (searchInput) searchInput.addEventListener('input', function() { currentPage = 1; filterAndSort(); });
 
     sortBtns.forEach(function(btn) {
         btn.addEventListener('click', function() {
@@ -155,8 +233,12 @@ $tracks = function_exists('roon_get_library_tracks') ? roon_get_library_tracks()
                 icon.classList.remove('hidden');
                 icon.style.transform = sortAsc ? '' : 'rotate(180deg)';
             }
+            currentPage = 1;
             filterAndSort();
         });
     });
+
+    // init pagination
+    filterAndSort();
 })();
 </script>

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Template Part: Roon Albums
  * @package roon
@@ -14,12 +14,7 @@ $albums = function_exists('roon_get_library_albums') ? roon_get_library_albums()
             <h1 class="m-0 text-[40px] font-bold leading-tight tracking-tight text-gray-900">Tất cả album</h1>
             <p class="mt-1 mb-0 text-[13px] text-gray-500"><?php echo count($albums); ?> albums</p>
         </div>
-        <div class="flex items-center gap-2">
-            <button class="flex items-center gap-2 rounded-full bg-roon-blue px-5 py-2 text-[13px] font-semibold text-white border-none cursor-pointer hover:bg-roon-indigo transition-colors">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                Phát tất cả
-            </button>
-        </div>
+       
     </div>
 
     <!-- Filter Toolbar -->
@@ -55,7 +50,7 @@ $albums = function_exists('roon_get_library_albums') ? roon_get_library_albums()
     </div>
 
     <!-- Grid -->
-    <div id="albums-grid" class="grid gap-5" style="grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));">
+    <div id="albums-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
         <?php foreach ($albums as $album) : ?>
         <a class="roon-album-card cursor-pointer group no-underline"
            href="<?php echo esc_url($album['url']); ?>"
@@ -81,7 +76,19 @@ $albums = function_exists('roon_get_library_albums') ? roon_get_library_albums()
         <svg class="mx-auto mb-3" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <p class="text-sm">Không tìm thấy album nào</p>
     </div>
+
+    <!-- Phân trang -->
+    <div id="albums-pagination" class="mt-10 flex justify-center gap-2 items-center hidden">
+        <button id="albums-prev-page" class="flex items-center justify-center w-8 h-8 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors bg-transparent border-none cursor-pointer" disabled>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div id="albums-page-numbers" class="flex items-center gap-1"></div>
+        <button id="albums-next-page" class="flex items-center justify-center w-8 h-8 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors bg-transparent border-none cursor-pointer">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+    </div>
 </div>
+
 
 <script>
 (function() {
@@ -93,11 +100,19 @@ $albums = function_exists('roon_get_library_albums') ? roon_get_library_albums()
     var emptyState  = document.getElementById('albums-empty');
     var sortMode    = 'newest';
     var sortNames   = { newest: 'Mới nhất', oldest: 'Cũ nhất', alpha: 'Tên: A → Z', plays: 'Lượt nghe nhiều' };
+    
+    // Pagination attributes
+    var currentPage = 1;
+    var itemsPerPage = 30; // 6 cột x 5 hàng = 30
+    var paginationWrapper = document.getElementById('albums-pagination');
+    var prevBtn = document.getElementById('albums-prev-page');
+    var nextBtn = document.getElementById('albums-next-page');
+    var pageNumbers = document.getElementById('albums-page-numbers');
 
     function filterAndSort() {
         var q = searchInput ? searchInput.value.trim().toLowerCase() : '';
         var cards = Array.from(grid.querySelectorAll('.roon-album-card'));
-        var visible = 0;
+        var filteredCards = [];
 
         // Sort
         cards.sort(function(a, b) {
@@ -110,23 +125,81 @@ $albums = function_exists('roon_get_library_albums') ? roon_get_library_albums()
             // newest (default)
             return (parseInt(b.dataset.albumYear) || 0) - (parseInt(a.dataset.albumYear) || 0);
         });
-        cards.forEach(function(c) { grid.appendChild(c); });
 
-        // Filter by search
+        // Search & Filter
         cards.forEach(function(card) {
             var title  = (card.dataset.albumTitle  || '').toLowerCase();
             var artist = (card.dataset.albumArtist || '').toLowerCase();
             var show   = !q || title.includes(q) || artist.includes(q);
-            card.style.display = show ? '' : 'none';
-            if (show) visible++;
+            if (show) {
+                filteredCards.push(card);
+            } else {
+                card.style.display = 'none';
+            }
+            grid.appendChild(card);
         });
 
-        if (countLabel) countLabel.textContent = visible + ' kết quả';
-        if (emptyState) emptyState.classList.toggle('hidden', visible > 0);
+        var visibleCount = filteredCards.length;
+        if (countLabel) countLabel.textContent = visibleCount + ' kết quả';
+        if (emptyState) emptyState.classList.toggle('hidden', visibleCount > 0);
+
+        // Render Pagination
+        var totalPages = Math.ceil(visibleCount / itemsPerPage);
+        if (currentPage > totalPages) currentPage = Math.max(1, totalPages);
+
+        if (totalPages > 1) {
+            paginationWrapper.classList.remove('hidden');
+        } else {
+            paginationWrapper.classList.add('hidden');
+        }
+
+        prevBtn.disabled = currentPage === 1;
+        nextBtn.disabled = currentPage === totalPages;
+
+        if (pageNumbers) {
+            pageNumbers.innerHTML = '';
+            for (let i = 1; i <= totalPages; i++) {
+                if (totalPages > 5 && i !== 1 && i !== totalPages && Math.abs(i - currentPage) > 1) {
+                    if (Math.abs(i - currentPage) === 2) {
+                        const dot = document.createElement('span');
+                        dot.className = 'text-gray-400 px-1';
+                        dot.textContent = '...';
+                        pageNumbers.appendChild(dot);
+                    }
+                    continue;
+                }
+                const btn = document.createElement('button');
+                btn.className = 'w-8 h-8 rounded-md border-none cursor-pointer transition-colors text-[13px] font-medium ';
+                btn.className += i === currentPage ? 'bg-gray-800 text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100 hover:text-gray-900';
+                btn.textContent = i;
+                if (i === currentPage) { btn.disabled = true; }
+                btn.onclick = function() {
+                    currentPage = i;
+                    filterAndSort();
+                    document.getElementById('page-albums').scrollTop = 0;
+                    document.getElementById('roon-content').scrollTop = 0;
+                };
+                pageNumbers.appendChild(btn);
+            }
+        }
+
+        // Setup DOM visual per chunk
+        filteredCards.forEach(function(card, index) {
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            if (index >= start && index < end) {
+                card.style.display = '';
+            } else {
+                card.style.display = 'none';
+            }
+        });
     }
 
+    if (prevBtn) prevBtn.addEventListener('click', function() { if (currentPage > 1) { currentPage--; filterAndSort(); } });
+    if (nextBtn) nextBtn.addEventListener('click', function() { currentPage++; filterAndSort(); });
+
     if (searchInput) {
-        searchInput.addEventListener('input', filterAndSort);
+        searchInput.addEventListener('input', function() { currentPage = 1; filterAndSort(); });
     }
 
     sortBtns.forEach(function(btn) {
@@ -134,8 +207,12 @@ $albums = function_exists('roon_get_library_albums') ? roon_get_library_albums()
             e.stopPropagation();
             sortMode = this.dataset.sort;
             if (sortLabel) sortLabel.textContent = 'Sắp xếp: ' + (sortNames[sortMode] || sortMode);
+            currentPage = 1;
             filterAndSort();
         });
     });
+    
+    // Init state
+    filterAndSort();
 })();
 </script>

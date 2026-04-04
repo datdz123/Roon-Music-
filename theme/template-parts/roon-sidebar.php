@@ -19,7 +19,17 @@ if (!empty($donate_qr) && is_array($donate_qr) && !empty($donate_qr['url'])) {
 
     <!-- ── Logo Row ── -->
     <div class="mb-2 flex flex-shrink-0 items-center justify-between border-b border-gray-100 px-4 pt-5 pb-3">
-        <a href="<?php echo home_url('/'); ?>" class="text-[26px] font-bold tracking-tight text-gray-900 no-underline leading-none">roon</a>
+        <a href="<?php echo home_url('/'); ?>" class="text-[26px] font-bold tracking-tight text-gray-900 no-underline leading-none flex items-center">
+            <?php
+            if (has_custom_logo()) {
+                $custom_logo_id = get_theme_mod('custom_logo');
+                $logo = wp_get_attachment_image_src($custom_logo_id, 'full');
+                echo '<img src="' . esc_url($logo[0]) . '" alt="' . esc_attr(get_bloginfo('name')) . '" class="h-8 max-w-[150px] w-auto">';
+            } else {
+                echo esc_html(get_bloginfo('name'));
+            }
+            ?>
+        </a>
         <div class="flex items-center gap-1">
             <button type="button"
                     id="roon-sidebar-close"
@@ -30,12 +40,7 @@ if (!empty($donate_qr) && is_array($donate_qr) && !empty($donate_qr['url'])) {
                     <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
             </button>
-            <button class="flex items-center justify-center w-8 h-8 rounded-md text-gray-400 hover:bg-gray-200 hover:text-gray-700 transition-colors" title="Settings">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                    <circle cx="12" cy="12" r="3"/>
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-                </svg>
-            </button>
+            
         </div>
     </div>
 
@@ -52,30 +57,32 @@ if (!empty($donate_qr) && is_array($donate_qr) && !empty($donate_qr['url'])) {
                 ['id'=>'search',        'label'=>'Tìm Kiếm',              'page'=>'search',        'icon'=>'search',       'type'=>'nav'],
                 ['id'=>'fav-albums',    'label'=>'Album có lượt xem nhiều',       'page'=>'fav-albums',    'icon'=>'heart',        'type'=>'nav'],
                 ['id'=>'fav-artists',   'label'=>'Ca Sĩ Yêu Thích',      'page'=>'fav-artists',   'icon'=>'star-user',    'type'=>'nav'],
-                ['id'=>'player',        'label'=>'Trình Phát',             'page'=>'player',        'icon'=>'play-circle',  'type'=>'nav'],
+
                 ['id'=>'donate',        'label'=>'Donate / Ủng hộ',       'page'=>'',              'icon'=>'gift',         'type'=>'popup-qr'],
                 ['id'=>'contact',       'label'=>'Liên Hệ Quảng Cáo',    'page'=>'contact',       'icon'=>'mail',         'type'=>'nav'],
             ];
             
             foreach ($sidebar_items as $item) :
-                $is_home   = $item['id'] === 'home';
+                $is_home   = $item['id'] === 'home' && !is_single();
+                $is_albums = $item['id'] === 'albums' && is_single();
+                $is_active = $is_home || $is_albums;
                 $is_popup  = $item['type'] === 'popup-qr';
             ?>
             <li>
                 <a href="<?php echo $is_popup ? '#' : esc_url( home_url( '/#' . $item['page'] ) ); ?>"
                    <?php if (!$is_popup) : ?>data-page="<?php echo esc_attr( $item['page'] ); ?>"<?php endif; ?>
                    <?php if ($is_popup) : ?>id="roon-donate-trigger" role="button"<?php endif; ?>
-                   class="roon-nav-item flex items-center gap-3.5 px-4 py-3 mx-2 rounded-lg text-[15px] font-semibold text-gray-800 no-underline cursor-pointer transition-all duration-200 hover:bg-gray-200/80 hover:text-gray-950 <?php echo $is_home ? 'text-roon-blue bg-blue-50/80 hover:bg-blue-100/60' : ''; ?>">
+                   class="roon-nav-item flex items-center gap-3.5 px-4 py-3 mx-2 rounded-lg text-[15px] font-semibold text-gray-800 no-underline cursor-pointer transition-all duration-200 hover:bg-gray-200/80 hover:text-gray-950 <?php echo $is_active ? 'text-roon-blue bg-blue-50/80 hover:bg-blue-100/60' : ''; ?>">
                     
                     <?php /* ── Icon: home ── */ ?>
                     <?php if ($item['icon'] === 'home') : ?>
-                    <svg class="w-[20px] h-[20px] flex-shrink-0 <?php echo $is_home ? 'stroke-roon-blue' : 'stroke-gray-700'; ?>" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg class="w-[20px] h-[20px] flex-shrink-0 <?php echo $is_active && $item['id'] === 'home' ? 'stroke-roon-blue' : 'stroke-gray-700'; ?>" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
                     </svg>
 
                     <?php /* ── Icon: disc (album) ── */ ?>
                     <?php elseif ($item['icon'] === 'disc') : ?>
-                    <svg class="w-[20px] h-[20px] flex-shrink-0 stroke-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg class="w-[20px] h-[20px] flex-shrink-0 <?php echo $is_active && $item['id'] === 'albums' ? 'stroke-roon-blue' : 'stroke-gray-700'; ?>" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/>
                     </svg>
 

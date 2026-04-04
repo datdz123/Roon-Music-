@@ -124,10 +124,18 @@
           }
         }
 
-        // Khởi tạo history với trang ban đầu
-        this.history = [startPage];
-        this.historyIndex = 0;
-        this.showPage(startPage, false);
+        if ($('body').hasClass('single-post')) {
+            // Đỏ menu Albums trên màn hình single.php
+            $('.roon-nav-item').removeClass('text-roon-blue bg-blue-50/80 hover:bg-blue-100/60').addClass('text-gray-800');
+            $('[data-page="albums"]').removeClass('text-gray-800').addClass('text-roon-blue bg-blue-50/80 hover:bg-blue-100/60');
+            $('[data-page] svg').removeClass('stroke-roon-blue').addClass('stroke-gray-700');
+            $('[data-page="albums"] svg').removeClass('stroke-gray-700').addClass('stroke-roon-blue');
+        } else {
+            // Khởi tạo history với trang ban đầu
+            this.history = [startPage];
+            this.historyIndex = 0;
+            this.showPage(startPage, false);
+        }
 
         // Mọi action liên kết (Sidebar / Stat grid) → Navigate
         $(document).on('click', '[data-page]', (e) => {
@@ -152,7 +160,17 @@
         });
 
         // Back / Forward buttons
-        $('#btn-nav-back').on('click', () => this.goBack());
+        $('#btn-nav-back').on('click', () => {
+             if ($('body').hasClass('single-post')) {
+                 if (document.referrer && document.referrer.includes(window.location.host)) {
+                     window.history.back();
+                 } else {
+                     window.location.href = window.roonHomeUrl || '/';
+                 }
+             } else {
+                 this.goBack();
+             }
+        });
         $('#btn-nav-forward').on('click', () => this.goForward());
 
         // ── Logic Search Page ──
@@ -299,12 +317,76 @@
         if (!this.audio) return;
 
         this.audio.volume = 0.5;
+        this.restoreState();
         this.bindControls();
         this.bindTracklistClicks();
         this.bindAudioEvents();
         this.bindProgressBar();
         this.bindVolumeBar();
         this.bindSidebarToggle();
+
+        window.addEventListener('beforeunload', () => {
+          this.saveState();
+        });
+      },
+      saveState() {
+        if (!this.playlist || !this.playlist.length) return;
+        try {
+          sessionStorage.setItem('roonPlayerState', JSON.stringify({
+            playlist: this.playlist,
+            currentIndex: this.currentTrackIndex,
+            currentTime: this.audio.currentTime || 0,
+            isPlaying: !this.audio.paused && this.isPlaying,
+            repeatMode: this.repeatMode,
+            isShuffle: this.isShuffle,
+            src: this.audio.src || ''
+          }));
+        } catch (e) {}
+      },
+      restoreState() {
+        try {
+          const st = sessionStorage.getItem('roonPlayerState');
+          if (!st) return;
+          const pst = JSON.parse(st);
+          if (pst.playlist && pst.playlist.length) {
+            this.playlist = pst.playlist;
+            this.currentTrackIndex = pst.currentIndex || 0;
+            this.isShuffle = pst.isShuffle || false;
+            this.repeatMode = pst.repeatMode || 'none';
+
+            // Restore UI Buttons
+            $('#player-shuffle').toggleClass('text-roon-blue bg-blue-50/50', this.isShuffle).toggleClass('text-gray-400', !this.isShuffle);
+            const rModes = { 'none': 'Repeat', 'all': 'Lặp tất cả', 'one': 'Lặp 1 bài' };
+            $('#player-repeat').removeClass('text-roon-blue text-gray-400 bg-blue-50/50');
+            if (this.repeatMode === 'none') {
+               $('#player-repeat').addClass('text-gray-400');
+            } else {
+               $('#player-repeat').addClass('text-roon-blue bg-blue-50/50');
+            }
+            $('#player-repeat').attr('title', rModes[this.repeatMode]);
+
+            const t = this.playlist[this.currentTrackIndex];
+            this.updateTrackInfo(t.title, t.artist, t.cover, t.albumUrl);
+
+            // Restore audio details
+            if (pst.src) {
+              this.audio.src = pst.src;
+              this.audio.currentTime = pst.currentTime || 0;
+              if (pst.isPlaying) {
+                const playPromise = this.audio.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        this.isPlaying = true;
+                        this.updatePlayUI();
+                    }).catch(() => {
+                        this.isPlaying = false;
+                        this.updatePlayUI();
+                    });
+                }
+              }
+            }
+          }
+        } catch(e) {}
       },
       bindSidebarToggle() {
         const $sidebar = $('#roon-sidebar');
@@ -353,7 +435,7 @@
         // Shuffle (thực sự đảo ngẫu nhiên)
         $('#player-shuffle').on('click', () => {
           this.isShuffle = !this.isShuffle;
-          $('#player-shuffle').toggleClass('text-roon-blue', this.isShuffle)
+          $('#player-shuffle').toggleClass('text-roon-blue bg-blue-50', this.isShuffle)
                               .toggleClass('text-gray-400', !this.isShuffle);
         });
 
@@ -361,15 +443,15 @@
         $('#player-repeat').on('click', () => {
           if (this.repeatMode === 'none') {
             this.repeatMode = 'all';
-            $('#player-repeat').addClass('text-roon-blue').removeClass('text-gray-400');
+            $('#player-repeat').addClass('text-roon-blue bg-blue-50').removeClass('text-gray-400');
             $('#player-repeat').attr('title', 'Lặp tất cả');
           } else if (this.repeatMode === 'all') {
             this.repeatMode = 'one';
-            $('#player-repeat').addClass('text-roon-blue');
+            $('#player-repeat').addClass('text-roon-blue bg-blue-50');
             $('#player-repeat').attr('title', 'Lặp 1 bài');
           } else {
             this.repeatMode = 'none';
-            $('#player-repeat').removeClass('text-roon-blue').addClass('text-gray-400');
+            $('#player-repeat').removeClass('text-roon-blue bg-blue-50').addClass('text-gray-400');
             $('#player-repeat').attr('title', 'Repeat');
           }
         });
@@ -377,6 +459,23 @@
         // Heart
         $('#player-heart').on('click', function () {
           $(this).toggleClass('text-roon-blue text-gray-300');
+        });
+
+        // ── Phát tất cả (play-all-tracks) ──
+        $(document).on('click', '#play-all-tracks', (e) => {
+          e.preventDefault();
+          const allBtns = $('[data-stream-url][data-track-title]').toArray();
+          if(allBtns.length === 0) return;
+          this.playlist = allBtns.map((b) => ({
+            url:      $(b).data('stream-url'),
+            title:    $(b).data('track-title'),
+            artist:   $(b).data('track-artist') || '',
+            cover:    $(b).data('track-cover') || 'https://placehold.co/48x48/e5e5e5/999?text=\u266B',
+            albumUrl: $(b).data('track-album-url') || '',
+          }));
+          this.currentTrackIndex = 0;
+          const t = this.playlist[0];
+          this.loadTrack(t.url, t.title, t.artist, t.cover, t.albumUrl);
         });
       },
       bindTracklistClicks() {

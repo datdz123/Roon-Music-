@@ -67,11 +67,11 @@
 							<h1 class="m-0 text-2xl font-bold text-gray-900 sm:text-4xl"><?php the_title(); ?></h1>
 							<p class="text-md mt-1 text-gray-600 sm:text-lg">
 								<?php
-								$artist_terms = get_the_terms( get_the_ID(), 'artist' );
+								$artist_terms = get_the_category();
 								if ( $artist_terms && ! is_wp_error( $artist_terms ) ) {
 									$artist_links = array();
 									foreach ( $artist_terms as $term ) {
-										$artist_links[] = '<a href="' . esc_url( get_term_link( $term ) ) . '" class="hover:text-roon-blue">' . esc_html( $term->name ) . '</a>';
+										$artist_links[] = '<a href="' . esc_url( get_category_link( $term->term_id ) ) . '" class="hover:text-roon-blue">' . esc_html( $term->name ) . '</a>';
 									}
 									echo implode( ', ', $artist_links );
 								} else {
@@ -132,7 +132,6 @@
 					<div class="mt-8">
 						<div class="mb-4 flex items-center border-b border-gray-200">
 							<button data-album-tab="tracks" class="album-tab -mb-px border-b-2 border-roon-blue px-4 py-2 text-sm font-medium text-roon-blue">Tracks</button>
-							<button data-album-tab="credits" class="album-tab -mb-px border-b-2 border-transparent px-4 py-2 text-sm font-medium text-gray-400 hover:text-gray-700">Credits</button>
 						</div>
 
 						<div id="album-tab-tracks">
@@ -202,6 +201,12 @@
 				<?php
 			endwhile;
 			?>
+
+			<!-- Album gợi ý / yêu thích -->
+			<div class="mx-auto w-full max-w-5xl px-0 mt-8 sm:mt-12 mb-4 border-t border-gray-100 pt-8 sm:pt-10">
+				<?php get_template_part('template-parts/roon', 'popular-albums', array('title' => 'Album yêu thích')); ?>
+			</div>
+
 			<div class="h-24"></div>
 		</div>
 	</div>

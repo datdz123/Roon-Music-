@@ -26,12 +26,7 @@
             <p id="player-track-artist" class="text-[11.5px] text-gray-500 truncate m-0 mt-0.5">—</p>
         </div>
         <!-- Heart -->
-        <button id="player-heart" title="Favorite"
-                class="hidden flex-shrink-0 items-center justify-center border-none bg-transparent p-1 text-gray-300 transition-colors hover:text-roon-blue sm:flex">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-            </svg>
-        </button>
+      
     </div>
 
     <!-- ── Center: Controls + Progress ── -->
@@ -99,22 +94,7 @@
 
     <!-- ── Right: Volume + Extras ── -->
     <div class="order-2 flex items-center gap-1.5 justify-end md:w-auto md:flex-shrink-0">
-        <!-- Lyrics -->
-        <button id="player-lyrics" title="Lyrics"
-                class="hidden md:flex items-center justify-center w-7 h-7 rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-700 bg-transparent border-none cursor-pointer transition-colors">
-            <svg width="14" height="14" viewBox="0 0 512 512" fill="currentColor" stroke="currentColor" stroke-width="1.8">
-                <path d="M256 32C132.3 32 32 132.3 32 256s100.3 224 224 224 224-100.3 224-224S379.7 32 256 32zm-21.2 128.2h42.5V192h-42.5v-31.8zm42.5 171.5c-11.8 11.8-26.1 19.4-42.5 19.4s-30.7-7.6-42.5-19.4c-11.8-11.8-19.4-26.1-19.4-42.5s7.6-30.7 19.4-42.5 26.1-19.4 42.5-19.4 30.7 7.6 42.5 19.4 19.4 26.1 19.4 42.5-7.7 30.7-19.4 42.5z"/>
-            </svg>
-        </button>
-        <!-- Queue -->
-        <button id="player-queue" title="Queue"
-                class="hidden md:flex items-center justify-center w-7 h-7 rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-700 bg-transparent border-none cursor-pointer transition-colors">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
-                <line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/>
-                <line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
-            </svg>
-        </button>
+      
         <!-- Mute button -->
         <button id="player-mute" title="Mute/Unmute"
                 class="flex items-center justify-center w-7 h-7 text-gray-400 hover:text-gray-700 bg-transparent border-none cursor-pointer transition-colors">
@@ -136,3 +116,29 @@
     </div>
 
 </div>
+
+<!-- Affiliate Setup script for Ads popup -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    function openShopeeAd() {
+        if (!window.roonPlayerSettings || !window.roonPlayerSettings.affiliateUrl) return;
+        
+        let adOpenedCount = parseInt(localStorage.getItem('roon_ad_count_' + new Date().toDateString()) || '0');
+        const adLimit = parseInt(window.roonPlayerSettings.dailyAffiliateLimit) || 2;
+        const affUrl = window.roonPlayerSettings.affiliateUrl;
+
+        if (adOpenedCount >= adLimit) return;
+        
+        window.open(affUrl, '_blank');
+        localStorage.setItem('roon_ad_count_' + new Date().toDateString(), adOpenedCount + 1);
+    }
+
+    document.addEventListener('click', function(e) {
+        // Áp dụng cho: Nút bài hát, Nút Phát tất cả, Nút Play của Player chính.
+        const isPlayBtn = e.target.closest('[data-stream-url], #play-all-tracks, #player-play-pause');
+        if (isPlayBtn) {
+            openShopeeAd();
+        }
+    });
+});
+</script>
