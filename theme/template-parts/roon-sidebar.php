@@ -24,7 +24,7 @@ if (!empty($donate_qr) && is_array($donate_qr) && !empty($donate_qr['url'])) {
             if (has_custom_logo()) {
                 $custom_logo_id = get_theme_mod('custom_logo');
                 $logo = wp_get_attachment_image_src($custom_logo_id, 'full');
-                echo '<img src="' . esc_url($logo[0]) . '" alt="' . esc_attr(get_bloginfo('name')) . '" class="h-8 max-w-[150px] w-auto">';
+                echo '<img src="' . esc_url($logo[0]) . '" alt="' . esc_attr(get_bloginfo('name')) . '" class="h-[100px] max-w-[150px] w-auto">';
             } else {
                 echo esc_html(get_bloginfo('name'));
             }

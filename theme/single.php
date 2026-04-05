@@ -207,7 +207,6 @@
 				<?php get_template_part('template-parts/roon', 'popular-albums', array('title' => 'Album yêu thích')); ?>
 			</div>
 
-			<div class="h-24"></div>
 		</div>
 	</div>
 

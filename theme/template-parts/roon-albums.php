@@ -103,7 +103,7 @@ $albums = function_exists('roon_get_library_albums') ? roon_get_library_albums()
     
     // Pagination attributes
     var currentPage = 1;
-    var itemsPerPage = 30; // 6 cột x 5 hàng = 30
+    var itemsPerPage = 18; // 6 cột x 3 hàng = 18
     var paginationWrapper = document.getElementById('albums-pagination');
     var prevBtn = document.getElementById('albums-prev-page');
     var nextBtn = document.getElementById('albums-next-page');

@@ -5,6 +5,30 @@
  */
 ?>
 
+<style>
+:root {
+    --roon-player-gap: 16px;
+    --roon-player-offset: calc(132px + env(safe-area-inset-bottom, 0px) + var(--roon-player-gap));
+}
+
+@media (min-width: 768px) {
+    :root {
+        --roon-player-gap: 24px;
+        --roon-player-offset: calc(72px + env(safe-area-inset-bottom, 0px) + var(--roon-player-gap));
+    }
+}
+
+#roon-content,
+.pb-roon-player {
+    padding-bottom: var(--roon-player-offset) !important;
+    scroll-padding-bottom: var(--roon-player-offset);
+}
+
+#roon-player {
+    padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+}
+</style>
+
 <div id="roon-player"
      class="fixed bottom-0 left-0 right-0 z-100 flex flex-wrap items-center gap-3 border-t border-gray-200 bg-white px-3 py-2 shadow-[0_-2px_12px_rgba(0,0,0,0.06)] font-inter sm:px-4 md:h-roon-player md:flex-nowrap md:gap-4 md:py-0">
 
@@ -120,6 +144,28 @@
 <!-- Affiliate Setup script for Ads popup -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    var playerElement = document.getElementById('roon-player');
+    var rootStyle = document.documentElement.style;
+
+    function syncPlayerOffset() {
+        if (!playerElement) {
+            return;
+        }
+
+        var gap = window.innerWidth >= 768 ? 24 : 16;
+        rootStyle.setProperty('--roon-player-gap', gap + 'px');
+        rootStyle.setProperty('--roon-player-offset', 'calc(' + playerElement.offsetHeight + 'px + env(safe-area-inset-bottom, 0px) + ' + gap + 'px)');
+    }
+
+    if (playerElement) {
+        syncPlayerOffset();
+        if (typeof ResizeObserver !== 'undefined') {
+            new ResizeObserver(syncPlayerOffset).observe(playerElement);
+        }
+        window.addEventListener('resize', syncPlayerOffset);
+        window.addEventListener('orientationchange', syncPlayerOffset);
+    }
+
     function openShopeeAd() {
         if (!window.roonPlayerSettings || !window.roonPlayerSettings.affiliateUrl) return;
         
