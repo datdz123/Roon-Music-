@@ -1,0 +1,22 @@
+{
+  "name": "shopee-affiliate-service",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shopee affiliate conversion service",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node src/server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "axios": "^1.8.4",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "p-limit": "^3.1.0",
+    "playwright": "^1.53.0"
+  }
+}

@@ -216,6 +216,13 @@ add_filter('tiny_mce_before_init', 'roon_tinymce_add_class');
  */
 function roon_get_shopee_aff_link()
 {
+	if (function_exists('roon_shopee_get_data')) {
+		$data = roon_shopee_get_data();
+		if (! empty($data['output_aff_link']) && is_string($data['output_aff_link'])) {
+			return trim($data['output_aff_link']);
+		}
+	}
+
 	if (! function_exists('get_field')) {
 		return '';
 	}
@@ -875,6 +882,11 @@ require get_template_directory() . '/inc/customizer-block.php';
  * Jellyfin → WordPress Auto Import.
  */
 require get_template_directory() . '/inc/jellyfin-import.php';
+
+/**
+ * Shopee affiliate converter integration.
+ */
+require get_template_directory() . '/inc/shopee-affiliate.php';
 
 /**
  * Hide Custom Theme
