@@ -414,7 +414,12 @@
         $(document).on('click', function(e) {
           if (!isOpen()) return;
           const $target = $(e.target);
-          if ($target.closest('#roon-sidebar').length) return;
+          if ($target.closest('#roon-sidebar').length) {
+            if ($target.closest('a').length || $target.closest('#roon-donate-trigger').length) {
+              closeSidebar();
+            }
+            return;
+          }
           if ($target.closest('#btn-sidebar-toggle').length) return;
           closeSidebar();
         });

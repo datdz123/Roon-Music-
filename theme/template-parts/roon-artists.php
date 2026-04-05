@@ -142,8 +142,12 @@ $artists = roon_get_library_artists_with_image();
     var nextBtn = document.getElementById('artists-next-page');
     var pageNumbers = document.getElementById('artists-page-numbers');
 
+    function removeDiacritics(str) {
+        return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
+    }
+
     function filterAndSort() {
-        var q = searchInput ? searchInput.value.trim().toLowerCase() : '';
+        var q = searchInput ? removeDiacritics(searchInput.value.trim().toLowerCase()) : '';
         var cards = Array.from(grid.querySelectorAll('.roon-artist-card'));
         var filteredCards = [];
 
@@ -161,7 +165,7 @@ $artists = roon_get_library_artists_with_image();
 
         // Search & Filter
         cards.forEach(function(card) {
-            var title = (card.dataset.artistName || '').toLowerCase();
+            var title = removeDiacritics((card.dataset.artistName || '').toLowerCase());
             var show = !q || title.includes(q);
             
             if (show) {

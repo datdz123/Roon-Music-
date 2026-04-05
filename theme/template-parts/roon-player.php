@@ -129,7 +129,7 @@
         </button>
         <!-- Volume bar -->
         <div id="player-volume-bar"
-             class="relative hidden h-1 w-20 cursor-pointer rounded-full bg-gray-200 group/vol md:block">
+             class="relative h-1 w-20 cursor-pointer rounded-full bg-gray-200 group/vol md:block">
             <div id="player-volume-fill"
                  class="h-full bg-gray-600 rounded-full group-hover/vol:bg-roon-blue transition-colors"
                  style="width:75%"></div>

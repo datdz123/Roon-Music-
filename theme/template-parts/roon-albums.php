@@ -109,8 +109,12 @@ $albums = function_exists('roon_get_library_albums') ? roon_get_library_albums()
     var nextBtn = document.getElementById('albums-next-page');
     var pageNumbers = document.getElementById('albums-page-numbers');
 
+    function removeDiacritics(str) {
+        return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
+    }
+
     function filterAndSort() {
-        var q = searchInput ? searchInput.value.trim().toLowerCase() : '';
+        var q = searchInput ? removeDiacritics(searchInput.value.trim().toLowerCase()) : '';
         var cards = Array.from(grid.querySelectorAll('.roon-album-card'));
         var filteredCards = [];
 
@@ -128,8 +132,8 @@ $albums = function_exists('roon_get_library_albums') ? roon_get_library_albums()
 
         // Search & Filter
         cards.forEach(function(card) {
-            var title  = (card.dataset.albumTitle  || '').toLowerCase();
-            var artist = (card.dataset.albumArtist || '').toLowerCase();
+            var title  = removeDiacritics((card.dataset.albumTitle  || '').toLowerCase());
+            var artist = removeDiacritics((card.dataset.albumArtist || '').toLowerCase());
             var show   = !q || title.includes(q) || artist.includes(q);
             if (show) {
                 filteredCards.push(card);

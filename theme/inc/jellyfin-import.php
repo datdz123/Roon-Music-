@@ -80,12 +80,18 @@ function roon_get_jellyfin_all_albums() {
 			continue;
 		}
 
-		$artist = '';
-		if ( ! empty( $item['AlbumArtist'] ) ) {
-			$artist = $item['AlbumArtist'];
-		} elseif ( ! empty( $item['AlbumArtists'] ) && is_array( $item['AlbumArtists'] ) ) {
-			$artist = $item['AlbumArtists'][0]['Name'] ?? '';
+		$artist_names = array();
+		if ( ! empty( $item['AlbumArtists'] ) && is_array( $item['AlbumArtists'] ) ) {
+			foreach ( $item['AlbumArtists'] as $a ) {
+				if ( ! empty( $a['Name'] ) ) {
+					$artist_names[] = $a['Name'];
+				}
+			}
 		}
+		if ( empty( $artist_names ) && ! empty( $item['AlbumArtist'] ) ) {
+			$artist_names[] = $item['AlbumArtist'];
+		}
+		$artist = implode( ', ', $artist_names );
 
 		$cover_url = '';
 		$image_tag = '';
@@ -163,18 +169,24 @@ function roon_import_single_jellyfin_album( $album_data ) {
 	}
 
 	// ── Tạo / lấy Category (Artist) ──
-	$category_id = 0;
-	$artist_name = trim( $album_data['artist'] ?? '' );
+	$category_ids = array();
+	$artist_string = trim( $album_data['artist'] ?? '' );
 
-	if ( '' !== $artist_name ) {
-		$term = term_exists( $artist_name, 'category' );
+	if ( '' !== $artist_string ) {
+		$artists = array_map( 'trim', explode( ',', $artist_string ) );
+		foreach ( $artists as $artist_name ) {
+			if ( '' === $artist_name ) {
+				continue;
+			}
+			$term = term_exists( $artist_name, 'category' );
 
-		if ( $term ) {
-			$category_id = (int) $term['term_id'];
-		} else {
-			$new_term = wp_insert_term( $artist_name, 'category' );
-			if ( ! is_wp_error( $new_term ) ) {
-				$category_id = (int) $new_term['term_id'];
+			if ( $term ) {
+				$category_ids[] = (int) $term['term_id'];
+			} else {
+				$new_term = wp_insert_term( $artist_name, 'category' );
+				if ( ! is_wp_error( $new_term ) ) {
+					$category_ids[] = (int) $new_term['term_id'];
+				}
 			}
 		}
 	}
@@ -190,8 +202,8 @@ function roon_import_single_jellyfin_album( $album_data ) {
 			: current_time( 'mysql' ),
 	);
 
-	if ( $category_id > 0 ) {
-		$post_data['post_category'] = array( $category_id );
+	if ( ! empty( $category_ids ) ) {
+		$post_data['post_category'] = $category_ids;
 	}
 
 	$post_id = wp_insert_post( $post_data, true );

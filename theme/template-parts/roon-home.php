@@ -15,44 +15,62 @@ $stats = [
 $recent_albums = function_exists('roon_get_library_albums') ? roon_get_library_albums(10) : [];
 $popular_albums = function_exists('roon_get_popular_albums') ? roon_get_popular_albums(10) : array_slice($recent_albums, 0, 10);
 
-$artist_terms = get_categories(array('hide_empty' => true));
-$popular_artists = [];
-foreach ($artist_terms as $term) {
-    $name = trim($term->name);
-    if ('' === $name) continue;
-    $words = preg_split('/\s+/', $name);
-    $initials = '';
-    foreach (array_slice($words, 0, 2) as $word) {
-        $initials .= function_exists('mb_substr') ? mb_substr($word, 0, 1) : substr($word, 0, 1);
-    }
-    
-    // Tính tổng lượt nghe (views) của ca sĩ
-    $artist_views = 0;
-    $artist_posts = get_posts(array(
-        'post_type'      => 'post',
-        'category_name'  => $term->slug,
-        'posts_per_page' => -1,
-        'fields'         => 'ids'
-    ));
-    foreach ($artist_posts as $p_id) {
-        $artist_views += (int) get_post_meta($p_id, 'roon_view_count', true);
-    }
+	global $wpdb;
+	$cache_key = 'roon_popular_artists_top10';
+	$popular_artists = get_transient($cache_key);
 
-    $popular_artists[] = array(
-        'name'     => $name,
-        'initials' => strtoupper($initials),
-        'count'    => $term->count, // số album nếu cần
-        'views'    => $artist_views,
-    );
-}
+	if ( false === $popular_artists ) {
+		// Dùng SQL query gộp (JOIN) để sum tổng view count của mỗi ca sĩ (category) một lần duy nhất thay vì N+1 queries.
+		$query = "
+			SELECT tt.term_id, SUM(CAST(pm.meta_value AS UNSIGNED)) as total_views
+			FROM {$wpdb->terms} t
+			INNER JOIN {$wpdb->term_taxonomy} tt ON t.term_id = tt.term_id
+			INNER JOIN {$wpdb->term_relationships} tr ON tt.term_taxonomy_id = tr.term_taxonomy_id
+			INNER JOIN {$wpdb->postmeta} pm ON tr.object_id = pm.post_id AND pm.meta_key = 'roon_view_count'
+			WHERE tt.taxonomy = 'category'
+			GROUP BY tt.term_id
+			ORDER BY total_views DESC
+		";
+		$views_results = $wpdb->get_results($query);
+		$term_views = [];
+		if ( ! empty($views_results) ) {
+			foreach ($views_results as $row) {
+				$term_views[$row->term_id] = (int) $row->total_views;
+			}
+		}
 
-// Sắp xếp theo lượt nghe giảm dần
-usort($popular_artists, function($a, $b) {
-    return $b['views'] <=> $a['views'];
-});
+		$artist_terms = get_categories(array('hide_empty' => true));
+		$popular_artists = [];
 
-// Lấy 10 ca sĩ đầu tiên
-$popular_artists = array_slice($popular_artists, 0, 10);
+		foreach ($artist_terms as $term) {
+			$name = trim($term->name);
+			if ('' === $name) {
+				continue;
+			}
+			$words = preg_split('/\s+/', $name);
+			$initials = '';
+			foreach (array_slice($words, 0, 2) as $word) {
+				$initials .= function_exists('mb_substr') ? mb_substr($word, 0, 1) : substr($word, 0, 1);
+			}
+
+			// Chỉ tra cứu mảng đã tổng hợp thay vì dùng get_posts và get_post_meta qua nhiều tầng lặp.
+			$artist_views = isset($term_views[$term->term_id]) ? $term_views[$term->term_id] : 0;
+
+			$popular_artists[] = array(
+				'name'     => $name,
+				'initials' => strtoupper($initials),
+				'count'    => $term->count, // số album
+				'views'    => $artist_views,
+			);
+		}
+
+		usort($popular_artists, function($a, $b) {
+			return $b['views'] <=> $a['views'];
+		});
+
+		$popular_artists = array_slice($popular_artists, 0, 10);
+		set_transient($cache_key, $popular_artists, 4 * HOUR_IN_SECONDS);
+	}
 
 ?>
 
@@ -115,13 +133,13 @@ $popular_artists = array_slice($popular_artists, 0, 10);
         </div>
 
         <div id="recent-albums-wrap">
-            <div id="grid-played" class="recent-albums-grid flex gap-3.5 overflow-x-auto pb-1" style="scrollbar-width:none;">
+            <div id="grid-played" class="recent-albums-grid flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-4" style="scrollbar-width:none;">
                 <?php 
                 // Album mới phát (giả lập bằng những album random hoặc phổ biến)
-                $played_albums = function_exists('roon_get_popular_albums') ? roon_get_popular_albums(10) : $recent_albums; 
+                $played_albums = function_exists('roon_get_popular_albums') ? roon_get_popular_albums(12) : $recent_albums; 
                 shuffle($played_albums); // Shuffle để có cảm giác khác biệt
                 foreach ($played_albums as $album) : ?>
-                <a class="roon-album-card flex-shrink-0 w-36 cursor-pointer group no-underline" href="<?php echo esc_url($album['url']); ?>" title="<?php echo esc_attr($album['title']); ?>">
+                <a class="roon-album-card flex-shrink-0 snap-start w-[calc(50%-8px)] sm:w-[calc(33.33%-10.6px)] md:w-[calc(25%-12px)] lg:w-[calc(16.66%-13.3px)] cursor-pointer group no-underline" href="<?php echo esc_url($album['url']); ?>" title="<?php echo esc_attr($album['title']); ?>">
                     <div class="relative w-full pb-[100%] rounded-lg overflow-hidden bg-gray-700">
                         <img src="<?php echo esc_url($album['cover']); ?>" alt="<?php echo esc_attr($album['title']); ?>" class="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy"/>
                         <div class="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex items-center justify-center transition-all duration-200">
@@ -136,9 +154,9 @@ $popular_artists = array_slice($popular_artists, 0, 10);
                 <?php endforeach; ?>
             </div>
 
-            <div id="grid-added" class="recent-albums-grid flex gap-3.5 overflow-x-auto pb-1 hidden" style="scrollbar-width:none;">
+            <div id="grid-added" class="recent-albums-grid flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-4 hidden" style="scrollbar-width:none;">
                 <?php foreach ($recent_albums as $album) : ?>
-                <a class="roon-album-card flex-shrink-0 w-36 cursor-pointer group no-underline" href="<?php echo esc_url($album['url']); ?>" title="<?php echo esc_attr($album['title']); ?>">
+                <a class="roon-album-card flex-shrink-0 snap-start w-[calc(50%-8px)] sm:w-[calc(33.33%-10.6px)] md:w-[calc(25%-12px)] lg:w-[calc(16.66%-13.3px)] cursor-pointer group no-underline" href="<?php echo esc_url($album['url']); ?>" title="<?php echo esc_attr($album['title']); ?>">
                     <div class="relative w-full pb-[100%] rounded-lg overflow-hidden bg-gray-700">
                         <img src="<?php echo esc_url($album['cover']); ?>" alt="<?php echo esc_attr($album['title']); ?>" class="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy"/>
                         <div class="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex items-center justify-center transition-all duration-200">
@@ -177,6 +195,26 @@ $popular_artists = array_slice($popular_artists, 0, 10);
                     if (targetGrid) targetGrid.classList.remove('hidden');
                 });
             });
+
+            // Slider Logic cho Mới Cập Nhật
+            const btnPrev = document.getElementById('btn-recent-prev');
+            const btnNext = document.getElementById('btn-recent-next');
+
+            if (btnPrev && btnNext) {
+                btnPrev.addEventListener('click', function() {
+                    const activeGrid = document.querySelector('.recent-albums-grid:not(.hidden)');
+                    if(activeGrid) {
+                        // Trượt một đoạn bằng 80% chiều rộng khung hiển thị
+                        activeGrid.scrollBy({ left: - (activeGrid.clientWidth * 0.8), behavior: 'smooth' });
+                    }
+                });
+                btnNext.addEventListener('click', function() {
+                    const activeGrid = document.querySelector('.recent-albums-grid:not(.hidden)');
+                    if(activeGrid) {
+                        activeGrid.scrollBy({ left: (activeGrid.clientWidth * 0.8), behavior: 'smooth' });
+                    }
+                });
+            }
         });
     </script>
 

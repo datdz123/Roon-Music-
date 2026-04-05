@@ -6,10 +6,10 @@
  */
 
 $title = isset($args['title']) ? $args['title'] : 'Album có lượt xem nhiều';
-$popular_albums = function_exists('roon_get_popular_albums') ? roon_get_popular_albums(10) : [];
+$popular_albums = function_exists('roon_get_popular_albums') ? roon_get_popular_albums(6) : [];
 if (empty($popular_albums)) {
-    $recent_albums = function_exists('roon_get_library_albums') ? roon_get_library_albums(10) : [];
-    $popular_albums = array_slice($recent_albums, 0, 10);
+    $recent_albums = function_exists('roon_get_library_albums') ? roon_get_library_albums(6) : [];
+    $popular_albums = array_slice($recent_albums, 0, 6);
 }
 ?>
     <div class="mt-8">
@@ -18,9 +18,9 @@ if (empty($popular_albums)) {
             <button data-page="fav-albums" class="text-[12px] font-semibold tracking-wide text-gray-400 bg-transparent border-none cursor-pointer px-2 py-1 rounded hover:text-roon-blue hover:bg-blue-50 transition-colors">XEM THÊM <svg width="12" height="12" class="inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></button>
         </div>
         <?php if (!empty($popular_albums)) : ?>
-        <div class="flex gap-4 overflow-x-auto pb-1" style="scrollbar-width:none;">
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4" style="scrollbar-width:none;">
             <?php foreach ($popular_albums as $item) : ?>
-            <a class="flex-shrink-0 w-36 cursor-pointer group no-underline" href="<?php echo esc_url($item['url']); ?>" title="<?php echo esc_attr($item['title']); ?>">
+            <a class="w-full cursor-pointer group no-underline" href="<?php echo esc_url($item['url']); ?>" title="<?php echo esc_attr($item['title']); ?>">
                 <div class="relative w-full pb-[100%] rounded-lg overflow-hidden bg-gray-200">
                     <img src="<?php echo esc_url($item['cover']); ?>" alt="<?php echo esc_attr($item['title']); ?>" class="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy"/>
                     <div class="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex items-center justify-center transition-all duration-200">

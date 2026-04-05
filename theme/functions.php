@@ -735,26 +735,37 @@ function roon_get_album_cover_url($post_id)
  */
 function roon_get_library_albums($limit = 0)
 {
-	$args = array(
-		'post_type'      => 'post',
-		'post_status'    => 'publish',
-		'posts_per_page' => $limit > 0 ? (int) $limit : -1,
-		'orderby'        => 'date',
-		'order'          => 'DESC',
-	);
+	$cache_key = 'roon_library_albums_all';
+	$albums = get_transient($cache_key);
 
-	$posts  = get_posts($args);
-	$albums = array();
-
-	foreach ($posts as $post) {
-		$albums[] = array(
-			'id'     => $post->ID,
-			'title'  => get_the_title($post),
-			'artist' => roon_get_album_artist_name($post->ID),
-			'year'   => get_the_date('Y', $post),
-			'cover'  => roon_get_album_cover_url($post->ID),
-			'url'    => get_permalink($post),
+	if ( false === $albums ) {
+		$args = array(
+			'post_type'      => 'post',
+			'post_status'    => 'publish',
+			'posts_per_page' => -1,
+			'orderby'        => 'date',
+			'order'          => 'DESC',
 		);
+
+		$posts  = get_posts($args);
+		$albums = array();
+
+		foreach ($posts as $post) {
+			$albums[] = array(
+				'id'     => $post->ID,
+				'title'  => get_the_title($post),
+				'artist' => roon_get_album_artist_name($post->ID),
+				'year'   => get_the_date('Y', $post),
+				'cover'  => roon_get_album_cover_url($post->ID),
+				'url'    => get_permalink($post),
+			);
+		}
+		
+		set_transient($cache_key, $albums, 6 * HOUR_IN_SECONDS);
+	}
+
+	if ( $limit > 0 && count($albums) > $limit ) {
+		return array_slice($albums, 0, $limit);
 	}
 
 	return $albums;
@@ -840,16 +851,28 @@ function roon_get_library_tracks($limit = 0)
  */
 function roon_get_library_stats()
 {
-	$albums  = roon_get_library_albums();
-	$artists = roon_get_library_artists();
-	$tracks  = roon_get_library_tracks();
+	$cache_key = 'roon_library_stats_v2';
+	$stats = get_transient($cache_key);
 
-	return array(
-		'artists'   => count($artists),
-		'albums'    => count($albums),
-		'tracks'    => count($tracks),
-		'composers' => 0,
-	);
+	if ( false === $stats ) {
+		$albums_count = wp_count_posts('post')->publish;
+		$artists_count = wp_count_terms(array('taxonomy' => 'category', 'hide_empty' => true));
+
+		// Tracks mất nhiều thời gian lấy qua API hoặc meta, nên đếm qua mảng rồi cache
+		$tracks = roon_get_library_tracks();
+
+		$stats = array(
+			'artists'   => (int) $artists_count,
+			'albums'    => (int) $albums_count,
+			'tracks'    => count($tracks),
+			'composers' => 0,
+		);
+
+		// Cache 12 tiếng để tối ưu hiệu suất, không cần đếm lại sau mỗi truy cập
+		set_transient($cache_key, $stats, 12 * HOUR_IN_SECONDS);
+	}
+
+	return $stats;
 }
 
 /**
@@ -874,32 +897,44 @@ add_action( 'wp_head', 'roon_track_album_views' );
  */
 function roon_get_popular_albums($limit = 5)
 {
-	$args = array(
-		'post_type'      => 'post',
-		'post_status'    => 'publish',
-		'posts_per_page' => $limit,
-		'meta_key'       => 'roon_view_count',
-		'orderby'        => 'meta_value_num',
-		'order'          => 'DESC',
-	);
+	$cache_key = 'roon_popular_albums_top50';
+	$albums = get_transient($cache_key);
 
-	$posts  = get_posts($args);
-	$albums = array();
-
-	foreach ($posts as $post) {
-		$albums[] = array(
-			'id'     => $post->ID,
-			'title'  => get_the_title($post),
-			'artist' => roon_get_album_artist_name($post->ID),
-			'year'   => get_the_date('Y', $post),
-			'cover'  => roon_get_album_cover_url($post->ID),
-			'url'    => get_permalink($post),
-            'views'  => get_post_meta($post->ID, 'roon_view_count', true) ?: 0,
+	if ( false === $albums ) {
+		$args = array(
+			'post_type'      => 'post',
+			'post_status'    => 'publish',
+			'posts_per_page' => 50, // Lấy sẵn 50 albums nhiều view nhất
+			'meta_key'       => 'roon_view_count',
+			'orderby'        => 'meta_value_num',
+			'order'          => 'DESC',
 		);
+
+		$posts  = get_posts($args);
+		$albums = array();
+
+		foreach ($posts as $post) {
+			$albums[] = array(
+				'id'     => $post->ID,
+				'title'  => get_the_title($post),
+				'artist' => roon_get_album_artist_name($post->ID),
+				'year'   => get_the_date('Y', $post),
+				'cover'  => roon_get_album_cover_url($post->ID),
+				'url'    => get_permalink($post),
+				'views'  => (int) get_post_meta($post->ID, 'roon_view_count', true) ?: 0,
+			);
+		}
+		
+		set_transient($cache_key, $albums, 2 * HOUR_IN_SECONDS);
+	}
+
+	if ( $limit > 0 && count($albums) > $limit ) {
+		return array_slice($albums, 0, $limit);
 	}
 
 	return $albums;
 }
+
 
 /**
  * Functions which enhance the theme by hooking into WordPress.
