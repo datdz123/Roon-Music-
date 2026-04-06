@@ -60,36 +60,9 @@
                 <h2 class="text-[18px] font-bold text-gray-900 m-0">Bài hát</h2>
                 <a href="#" class="text-[12px] text-gray-500 hover:text-gray-800 font-medium no-underline mb-0.5">Xem tất cả &rarr;</a>
             </div>
-            
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-1.5">
-                <?php 
-                $search_tracks = [
-                    ['title'=>'01 - Miracle', 'artist'=>"12 Girls Band\nThe Best of 12 Girls Band (2000)", 'duration'=>'2:46', 'cover'=>'https://placehold.co/48x48/6a4a3a/f0d0b0?text=M'],
-                    ['title'=>'02 - El Condor Pasa', 'artist'=>"12 Girls Band\nThe Best of 12 Girls Band (2000)", 'duration'=>'4:33', 'cover'=>'https://placehold.co/48x48/6a4a3a/f0d0b0?text=E'],
-                    ['title'=>'03 - New Classicism', 'artist'=>"12 Girls Band\nThe Best of 12 Girls Band (2000)", 'duration'=>'5:40', 'cover'=>'https://placehold.co/48x48/6a4a3a/f0d0b0?text=NC'],
-                    ['title'=>'05 - Take Five', 'artist'=>"12 Girls Band\nThe Best of 12 Girls Band (2000)", 'duration'=>'2:44', 'cover'=>'https://placehold.co/48x48/6a4a3a/f0d0b0?text=TF'],
-                    ['title'=>'06 - Reel Around the Sun (from Riverdance)', 'artist'=>"12 Girls Band\nThe Best of 12 Girls Band (2000)", 'duration'=>'5:03', 'cover'=>'https://placehold.co/48x48/6a4a3a/f0d0b0?text=RA'],
-                    ['title'=>'07 - Whispering Earth', 'artist'=>"12 Girls Band\nThe Best of 12 Girls Band (2000)", 'duration'=>'4:54', 'cover'=>'https://placehold.co/48x48/6a4a3a/f0d0b0?text=WE'],
-                    ['title'=>'08 - Dunhuang', 'artist'=>"12 Girls Band\nThe Best of 12 Girls Band (2000)", 'duration'=>'4:27', 'cover'=>'https://placehold.co/48x48/6a4a3a/f0d0b0?text=DH'],
-                    ['title'=>'09 - The Great Valley', 'artist'=>"12 Girls Band\nThe Best of 12 Girls Band (2000)", 'duration'=>'5:05', 'cover'=>'https://placehold.co/48x48/6a4a3a/f0d0b0?text=GV'],
-                    ['title'=>'10 - Carnival', 'artist'=>"12 Girls Band\nThe Best of 12 Girls Band (2000)", 'duration'=>'5:44', 'cover'=>'https://placehold.co/48x48/6a4a3a/f0d0b0?text=CV'],
-                    ['title'=>'12 Girls Band - Beautiful Energy', 'artist'=>"Joshi Juni Gakubou\nBeautiful Energy", 'duration'=>'65:52', 'cover'=>'https://placehold.co/48x48/e0c0a0/6a4a3a?text=BE'],
-                ];
-                foreach ($search_tracks as $track) : ?>
-                <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer group border border-transparent hover:border-gray-100">
-                    <div class="relative w-[46px] h-[46px] flex-shrink-0 bg-gray-200 rounded overflow-hidden">
-                        <img src="<?php echo esc_url($track['cover']); ?>" class="w-full h-full object-cover"/>
-                        <button class="absolute inset-0 bg-black/40 flex items-center justify-center border-none opacity-0 group-hover:opacity-100 transition-opacity pl-0.5" data-stream-url="#" data-track-title="<?php echo esc_attr($track['title']); ?>" data-track-artist="<?php echo esc_attr(explode("\n", $track['artist'])[0]); ?>" data-track-cover="<?php echo esc_url($track['cover']); ?>">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                        </button>
-                    </div>
-                    <div class="flex flex-col flex-1 min-w-0 justify-center gap-0.5">
-                        <div class="text-[13px] font-semibold text-gray-900 truncate leading-none"><?php echo esc_html($track['title']); ?></div>
-                        <div class="text-[11.5px] text-gray-500 leading-tight line-clamp-2"><?php echo nl2br(esc_html($track['artist'])); ?></div>
-                    </div>
-                    <div class="text-[12px] text-gray-400 tabular-nums pr-2 flex-shrink-0"><?php echo esc_html($track['duration']); ?></div>
-                </div>
-                <?php endforeach; ?>
+
+            <div id="search-results-tracks" class="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-1.5">
+                <!-- Dynamic results will be rendered here -->
             </div>
         </div>
 
@@ -99,30 +72,120 @@
                 <h2 class="text-[18px] font-bold text-gray-900 m-0">Nhạc Lossless</h2>
                 <a href="#" class="text-[12px] text-gray-500 hover:text-gray-800 font-medium no-underline mb-0.5">Xem tất cả &rarr;</a>
             </div>
-            
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-                <?php 
-                $search_albums = [
-                    ['title'=>'Lossless Music', 'cover'=>'https://placehold.co/180x180/374151/e2e8f0?text=lossless+music'],
-                    ['title'=>'Lossless Music', 'cover'=>'https://placehold.co/180x180/374151/e2e8f0?text=lossless+music'],
-                    ['title'=>'Lossless Music', 'cover'=>'https://placehold.co/180x180/374151/e2e8f0?text=lossless+music'],
-                    ['title'=>'Lossless Music', 'cover'=>'https://placehold.co/180x180/374151/e2e8f0?text=lossless+music'],
-                    ['title'=>'21st Century Breakdown', 'cover'=>'https://placehold.co/180x180/8b0000/ffffff?text=Green+Day'],
-                    ['title'=>'Bruno Mars XXIV', 'cover'=>'https://placehold.co/180x180/e5e5e5/333333?text=Brunos'],
-                ];
-                foreach ($search_albums as $album) : ?>
-                <div class="roon-album-card cursor-pointer group" data-page-target="single-album" data-album-title="<?php echo esc_attr($album['title']); ?>" data-album-artist="Various Artists">
-                    <div class="relative w-full pb-[100%] rounded-md overflow-hidden bg-gray-200 mb-2 shadow-sm border border-gray-100">
-                        <img src="<?php echo esc_url($album['cover']); ?>" class="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105 duration-300"/>
-                        <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                            <button class="w-10 h-10 rounded-full bg-roon-blue text-white flex items-center justify-center border-none opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-transform shadow-md pl-0.5">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <?php endforeach; ?>
+
+            <div id="search-results-albums" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                <!-- Dynamic results will be rendered here -->
             </div>
         </div>
     </div>
 </div>
+
+<!-- JavaScript: Dynamic Search -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('roon-search-input');
+    const clearBtn = document.getElementById('roon-search-clear');
+    const emptyState = document.getElementById('search-state-empty');
+    const resultsState = document.getElementById('search-state-results');
+    const tracksContainer = document.getElementById('search-results-tracks');
+    const albumsContainer = document.getElementById('search-results-albums');
+
+    if (!searchInput) return;
+
+    let searchTimeout;
+
+    function performSearch(query) {
+        if (query.length < 2) {
+            emptyState.classList.remove('hidden');
+            resultsState.classList.add('hidden');
+            clearBtn.classList.add('hidden');
+            return;
+        }
+
+        clearBtn.classList.remove('hidden');
+
+        fetch('/wp-json/roon/v1/search?s=' + encodeURIComponent(query) + '&limit=10')
+            .then(response => response.json())
+            .then(data => {
+                // Render tracks/albums
+                tracksContainer.innerHTML = '';
+                if (data.albums && data.albums.length > 0) {
+                    data.albums.forEach(album => {
+                        const trackEl = document.createElement('div');
+                        trackEl.className = 'flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer group border border-transparent hover:border-gray-100';
+                        trackEl.innerHTML = `
+                            <div class="relative w-[46px] h-[46px] flex-shrink-0 bg-gray-200 rounded overflow-hidden">
+                                <img src="${escapeHtml(album.cover)}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/46x46/6a4a3a/f0d0b0?text=+'" />
+                                <button class="absolute inset-0 bg-black/40 flex items-center justify-center border-none opacity-0 group-hover:opacity-100 transition-opacity pl-0.5" data-stream-url="${escapeHtml(album.url)}" data-track-title="${escapeHtml(album.title)}" data-track-artist="${escapeHtml(album.artist)}" data-track-cover="${escapeHtml(album.cover)}">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                                </button>
+                            </div>
+                            <div class="flex flex-col flex-1 min-w-0 justify-center gap-0.5">
+                                <div class="text-[13px] font-semibold text-gray-900 truncate leading-none">${escapeHtml(album.title)}</div>
+                                <div class="text-[11.5px] text-gray-500 leading-tight">${escapeHtml(album.artist)}</div>
+                            </div>
+                            <div class="text-[12px] text-gray-400 tabular-nums pr-2 flex-shrink-0">${album.views} views</div>
+                        `;
+                        tracksContainer.appendChild(trackEl);
+                    });
+                } else {
+                    tracksContainer.innerHTML = '<p class="text-sm text-gray-400 col-span-full">Không tìm thấy bài hát</p>';
+                }
+
+                // Render albums
+                albumsContainer.innerHTML = '';
+                if (data.artists && data.artists.length > 0) {
+                    data.artists.forEach(artist => {
+                        const albumEl = document.createElement('div');
+                        albumEl.className = 'roon-album-card cursor-pointer group';
+                        albumEl.innerHTML = `
+                            <div class="relative w-full pb-[100%] rounded-md overflow-hidden bg-gradient-to-br from-indigo-100 to-purple-100 mb-2 shadow-sm border border-gray-100">
+                                <div class="absolute inset-0 flex items-center justify-center text-3xl font-bold text-indigo-400/70">${escapeHtml(artist.initials)}</div>
+                                <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                    <button class="w-10 h-10 rounded-full bg-roon-blue text-white flex items-center justify-center border-none opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-transform shadow-md pl-0.5">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="text-[13px] font-semibold text-gray-800 m-0 truncate">${escapeHtml(artist.name)}</p>
+                            <p class="text-[11px] text-gray-400 m-0">${artist.count} albums</p>
+                        `;
+                        albumsContainer.appendChild(albumEl);
+                    });
+                } else {
+                    albumsContainer.innerHTML = '<p class="text-sm text-gray-400 col-span-full">Không tìm thấy nghệ sĩ</p>';
+                }
+
+                emptyState.classList.add('hidden');
+                resultsState.classList.remove('hidden');
+            })
+            .catch(err => {
+                console.error('Search error:', err);
+                emptyState.classList.remove('hidden');
+                resultsState.classList.add('hidden');
+            });
+    }
+
+    searchInput.addEventListener('input', function(e) {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            performSearch(e.target.value);
+        }, 300);
+    });
+
+    clearBtn.addEventListener('click', function() {
+        searchInput.value = '';
+        clearBtn.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+        resultsState.classList.add('hidden');
+        searchInput.focus();
+    });
+
+    // Helper: escape HTML
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+});
+</script>

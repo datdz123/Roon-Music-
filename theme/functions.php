@@ -876,6 +876,22 @@ function roon_get_library_stats()
 }
 
 /**
+ * Xóa transient cache khi post được publish/update/delete.
+ */
+function roon_clear_library_cache( $post_id ) {
+	$post = get_post( $post_id );
+	if ( $post && $post->post_type === 'post' ) {
+		delete_transient( 'roon_library_albums_all' );
+		delete_transient( 'roon_library_stats_v2' );
+		delete_transient( 'roon_popular_albums_top50' );
+		delete_transient( 'roon_popular_artists_top10' );
+	}
+}
+add_action( 'save_post', 'roon_clear_library_cache' );
+add_action( 'delete_post', 'roon_clear_library_cache' );
+add_action( 'edit_post', 'roon_clear_library_cache' );
+
+/**
  * Theo dõi lượt xem của Album khi người dùng truy cập trang Single.
  */
 function roon_track_album_views() {
@@ -890,41 +906,58 @@ function roon_track_album_views() {
 add_action( 'wp_head', 'roon_track_album_views' );
 
 /**
- * Return popular albums (Lượt xem nhiều).
+ * Return popular albums (Lượt xem nhiều) - REAL-TIME, không cache.
+ * Dùng cho "Album mới phát" để cập nhật ngay khi khách xem.
  *
  * @param int $limit Number of albums.
  * @return array<int, array<string, mixed>>
  */
 function roon_get_popular_albums($limit = 5)
 {
+	$args = array(
+		'post_type'      => 'post',
+		'post_status'    => 'publish',
+		'posts_per_page' => 50, // Lấy sẵn 50 albums nhiều view nhất
+		'meta_key'       => 'roon_view_count',
+		'orderby'        => 'meta_value_num',
+		'order'          => 'DESC',
+	);
+
+	$posts  = get_posts($args);
+	$albums = array();
+
+	foreach ($posts as $post) {
+		$albums[] = array(
+			'id'     => $post->ID,
+			'title'  => get_the_title($post),
+			'artist' => roon_get_album_artist_name($post->ID),
+			'year'   => get_the_date('Y', $post),
+			'cover'  => roon_get_album_cover_url($post->ID),
+			'url'    => get_permalink($post),
+			'views'  => (int) get_post_meta($post->ID, 'roon_view_count', true) ?: 0,
+		);
+	}
+
+	if ( $limit > 0 && count($albums) > $limit ) {
+		return array_slice($albums, 0, $limit);
+	}
+
+	return $albums;
+}
+
+/**
+ * Return popular albums với cache 2 tiếng - dùng cho các nơi khác cần tối ưu.
+ *
+ * @param int $limit Number of albums.
+ * @return array<int, array<string, mixed>>
+ */
+function roon_get_popular_albums_cached($limit = 5)
+{
 	$cache_key = 'roon_popular_albums_top50';
 	$albums = get_transient($cache_key);
 
 	if ( false === $albums ) {
-		$args = array(
-			'post_type'      => 'post',
-			'post_status'    => 'publish',
-			'posts_per_page' => 50, // Lấy sẵn 50 albums nhiều view nhất
-			'meta_key'       => 'roon_view_count',
-			'orderby'        => 'meta_value_num',
-			'order'          => 'DESC',
-		);
-
-		$posts  = get_posts($args);
-		$albums = array();
-
-		foreach ($posts as $post) {
-			$albums[] = array(
-				'id'     => $post->ID,
-				'title'  => get_the_title($post),
-				'artist' => roon_get_album_artist_name($post->ID),
-				'year'   => get_the_date('Y', $post),
-				'cover'  => roon_get_album_cover_url($post->ID),
-				'url'    => get_permalink($post),
-				'views'  => (int) get_post_meta($post->ID, 'roon_view_count', true) ?: 0,
-			);
-		}
-		
+		$albums = roon_get_popular_albums(50);
 		set_transient($cache_key, $albums, 2 * HOUR_IN_SECONDS);
 	}
 
@@ -971,3 +1004,116 @@ require get_template_directory() . '/inc/jellyfin-import.php';
 // add_action('admin_menu', function () {
 //     remove_submenu_page('themes.php', 'theme-editor.php');
 // }, 999);
+
+/**
+ * REST API Search Posts (Động - không cache)
+ * Endpoint: /wp-json/roon/v1/search
+ */
+add_action('rest_api_init', function() {
+	register_rest_route('roon/v1', '/search', array(
+		'methods' => 'GET',
+		'callback' => 'roon_rest_search_posts',
+		'permission_callback' => '__return_true',
+		'args' => array(
+			's' => array(
+				'type' => 'string',
+				'required' => false,
+				'sanitize_callback' => 'sanitize_text_field',
+			),
+			'type' => array(
+				'type' => 'string',
+				'required' => false,
+				'sanitize_callback' => 'sanitize_text_field',
+			),
+			'limit' => array(
+				'type' => 'integer',
+				'required' => false,
+				'default' => 10,
+			),
+		),
+	));
+});
+
+/**
+ * Callback function for search posts REST endpoint
+ */
+function roon_rest_search_posts($request) {
+	$search_query = $request->get_param('s') ?: '';
+	$type = $request->get_param('type') ?: 'all'; // all, tracks, albums
+	$limit = (int) $request->get_param('limit') ?: 10;
+
+	$results = array(
+		'tracks' => array(),
+		'albums' => array(),
+		'artists' => array(),
+	);
+
+	if (strlen($search_query) < 2) {
+		return rest_ensure_response($results);
+	}
+
+	// Search Posts (bài hát / album)
+	$args = array(
+		'post_type' => 'post',
+		'post_status' => 'publish',
+		'posts_per_page' => $limit * 2,
+		's' => $search_query,
+		'orderby' => 'relevance',
+	);
+
+	$query = new WP_Query($args);
+
+	foreach ($query->posts as $post) {
+		$post_data = array(
+			'id' => $post->ID,
+			'title' => get_the_title($post),
+			'artist' => roon_get_album_artist_name($post->ID),
+			'cover' => roon_get_album_cover_url($post->ID),
+			'url' => get_permalink($post),
+			'views' => (int) get_post_meta($post->ID, 'roon_view_count', true) ?: 0,
+		);
+
+		if ($type === 'all' || $type === 'tracks') {
+			$results['albums'][] = $post_data;
+		}
+	}
+
+	// Search Artists (Categories)
+	$artist_args = array(
+		'taxonomy' => 'category',
+		'hide_empty' => true,
+		'search' => $search_query,
+		'number' => $limit,
+	);
+
+	$artists = get_terms($artist_args);
+
+	foreach ($artists as $artist) {
+		$name = trim($artist->name);
+		if ('' === $name) {
+			continue;
+		}
+		$words = preg_split('/\s+/', $name);
+		$initials = '';
+		foreach (array_slice($words, 0, 2) as $word) {
+			$initials .= function_exists('mb_substr') ? mb_substr($word, 0, 1) : substr($word, 0, 1);
+		}
+
+		if ($type === 'all' || $type === 'artists') {
+			$results['artists'][] = array(
+				'id' => $artist->term_id,
+				'name' => $name,
+				'initials' => strtoupper($initials),
+				'count' => $artist->count,
+				'url' => get_term_link($artist),
+			);
+		}
+	}
+
+	// Limit results
+	$results['tracks'] = array_slice($results['tracks'], 0, $limit);
+	$results['albums'] = array_slice($results['albums'], 0, $limit);
+	$results['artists'] = array_slice($results['artists'], 0, $limit);
+
+	return rest_ensure_response($results);
+}

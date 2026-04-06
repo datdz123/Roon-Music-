@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Template Part: Roon Home
  * @package roon
@@ -11,6 +11,7 @@ $stats = [
     ['label' => 'TRACKS',    'count' => $library_stats['tracks'] ?? 0,    'icon' => 'tracks'],
     ['label' => 'COMPOSERS', 'count' => $library_stats['composers'] ?? 0, 'icon' => 'composers'],
 ];
+
 
 $recent_albums = function_exists('roon_get_library_albums') ? roon_get_library_albums(10) : [];
 $popular_albums = function_exists('roon_get_popular_albums') ? roon_get_popular_albums(10) : array_slice($recent_albums, 0, 10);
