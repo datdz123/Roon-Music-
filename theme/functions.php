@@ -709,6 +709,40 @@ function roon_get_album_artist_name($post_id)
 }
 
 /**
+ * Get the full artist list for an album post.
+ *
+ * @param int    $post_id   Post ID.
+ * @param string $separator Separator used between artist names.
+ * @return string
+ */
+function roon_get_album_artist_names($post_id, $separator = ', ')
+{
+	$categories = get_the_category((int) $post_id);
+
+	if (empty($categories) || is_wp_error($categories)) {
+		return roon_get_album_artist_name($post_id);
+	}
+
+	$artist_names = array();
+
+	foreach ($categories as $category) {
+		$name = isset($category->name) ? trim((string) $category->name) : '';
+
+		if ('' !== $name) {
+			$artist_names[] = $name;
+		}
+	}
+
+	$artist_names = array_values(array_unique($artist_names));
+
+	if (empty($artist_names)) {
+		return roon_get_album_artist_name($post_id);
+	}
+
+	return implode($separator, $artist_names);
+}
+
+/**
  * Get a safe album cover URL for an album post.
  *
  * @param int $post_id Post ID.
@@ -754,7 +788,7 @@ function roon_get_library_albums($limit = 0)
 			$albums[] = array(
 				'id'     => $post->ID,
 				'title'  => get_the_title($post),
-				'artist' => roon_get_album_artist_name($post->ID),
+				'artist' => roon_get_album_artist_names($post->ID),
 				'year'   => get_the_date('Y', $post),
 				'cover'  => roon_get_album_cover_url($post->ID),
 				'url'    => get_permalink($post),
@@ -1012,7 +1046,7 @@ require get_template_directory() . '/inc/jellyfin-import.php';
 add_action('rest_api_init', function() {
 	register_rest_route('roon/v1', '/search', array(
 		'methods' => 'GET',
-		'callback' => 'roon_rest_search_posts',
+		'callback' => 'roon_rest_search_posts_v2',
 		'permission_callback' => '__return_true',
 		'args' => array(
 			's' => array(
@@ -1117,3 +1151,159 @@ function roon_rest_search_posts($request) {
 
 	return rest_ensure_response($results);
 }
+
+/**
+ * Improved search callback for the Roon search page.
+ *
+ * @param WP_REST_Request $request Request object.
+ * @return WP_REST_Response
+ */
+function roon_rest_search_posts_v2($request) {
+	$search_query = $request->get_param('s') ?: '';
+	$type = $request->get_param('type') ?: 'all';
+	$limit = (int) $request->get_param('limit') ?: 10;
+
+	$results = array(
+		'tracks'  => array(),
+		'albums'  => array(),
+		'artists' => array(),
+	);
+
+	if (strlen($search_query) < 2) {
+		return rest_ensure_response($results);
+	}
+
+	$normalized_query = remove_accents(function_exists('mb_strtolower') ? mb_strtolower($search_query) : strtolower($search_query));
+
+	$matches_search = static function ($value) use ($normalized_query) {
+		$value = is_scalar($value) ? (string) $value : '';
+
+		if ('' === $value) {
+			return false;
+		}
+
+		$normalized_value = remove_accents(function_exists('mb_strtolower') ? mb_strtolower($value) : strtolower($value));
+
+		return false !== strpos($normalized_value, $normalized_query);
+	};
+
+	if ($type === 'all' || $type === 'tracks') {
+		foreach (roon_get_library_tracks() as $track) {
+			if (
+				! $matches_search($track['title'] ?? '') &&
+				! $matches_search($track['artist'] ?? '') &&
+				! $matches_search($track['album'] ?? '')
+			) {
+				continue;
+			}
+
+			$results['tracks'][] = array(
+				'title'      => $track['title'] ?? 'Unknown Track',
+				'artist'     => $track['artist'] ?? 'Unknown Artist',
+				'album'      => $track['album'] ?? '',
+				'duration'   => $track['duration'] ?? '--:--',
+				'cover'      => $track['cover'] ?? '',
+				'stream_url' => $track['stream_url'] ?? '#',
+				'post_url'   => $track['post_url'] ?? '#',
+			);
+
+			if (count($results['tracks']) >= $limit) {
+				break;
+			}
+		}
+	}
+
+	if ($type === 'all' || $type === 'albums') {
+		foreach (roon_get_library_albums() as $album) {
+			if (
+				! $matches_search($album['title'] ?? '') &&
+				! $matches_search($album['artist'] ?? '')
+			) {
+				continue;
+			}
+
+			$results['albums'][] = array(
+				'id'     => $album['id'] ?? 0,
+				'title'  => $album['title'] ?? '',
+				'artist' => $album['artist'] ?? 'Unknown Artist',
+				'cover'  => $album['cover'] ?? '',
+				'url'    => $album['url'] ?? '#',
+				'year'   => $album['year'] ?? '',
+			);
+
+			if (count($results['albums']) >= $limit) {
+				break;
+			}
+		}
+	}
+
+	if ($type === 'all' || $type === 'artists') {
+		$artists = get_terms(array(
+			'taxonomy'   => 'category',
+			'hide_empty' => true,
+			'number'     => 0,
+		));
+
+		if (! is_wp_error($artists)) {
+			foreach ($artists as $artist) {
+				$name = trim($artist->name);
+
+				if ('' === $name || ! $matches_search($name)) {
+					continue;
+				}
+
+				$words = preg_split('/\s+/', $name);
+				$initials = '';
+				foreach (array_slice($words, 0, 2) as $word) {
+					$initials .= function_exists('mb_substr') ? mb_substr($word, 0, 1) : substr($word, 0, 1);
+				}
+
+				$results['artists'][] = array(
+					'id'       => $artist->term_id,
+					'name'     => $name,
+					'initials' => strtoupper($initials),
+					'count'    => $artist->count,
+					'url'      => get_term_link($artist),
+				);
+
+				if (count($results['artists']) >= $limit) {
+					break;
+				}
+			}
+		}
+	}
+
+	$results['meta'] = array(
+		'query' => $search_query,
+		'type'  => $type,
+		'counts' => array(
+			'tracks'  => count($results['tracks']),
+			'albums'  => count($results['albums']),
+			'artists' => count($results['artists']),
+		),
+	);
+
+	return rest_ensure_response($results);
+}
+
+
+define('FORCE_SSL_ADMIN', true);
+
+if ($_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https')
+    $_SERVER['HTTPS'] = 'on';
+
+
+add_filter('admin_url', function($url, $path, $blog_id, $scheme) {
+    if ($path === 'admin-ajax.php') {
+        return str_replace('http://', 'https://', $url);
+    }
+    return $url;
+}, 10, 4);
+
+add_filter('admin_url', function($url) {
+    return str_replace('http://', 'https://', $url);
+});
+
+add_filter('script_loader_src', function($src) {
+    return str_replace('http://', 'https://', $src);
+});

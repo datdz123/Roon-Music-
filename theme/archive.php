@@ -1,6 +1,6 @@
 <?php
 /**
- * The template for displaying archive pages (Artist Tracker List)
+ * The template for displaying artist archive pages.
  *
  * @package roon
  */
@@ -22,160 +22,251 @@
 <div id="roon-app" class="flex h-[100dvh] min-h-screen overflow-hidden bg-white font-inter">
 	<div id="roon-sidebar-overlay" class="fixed inset-0 bg-black/20 z-40 hidden lg:hidden"></div>
 	<?php
-	get_template_part( 'template-parts/roon', 'sidebar', array( 'is_premium' => isset($is_premium) ? $is_premium : false ) );
+	get_template_part( 'template-parts/roon', 'sidebar', array( 'is_premium' => isset( $is_premium ) ? $is_premium : false ) );
 	?>
 	<div id="roon-main" class="flex h-[100dvh] min-w-0 flex-1 flex-col overflow-hidden transition-transform duration-300 ease-in-out">
 		<?php get_template_part( 'template-parts/roon', 'header-bar' ); ?>
-		
+
 		<div id="roon-content" class="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 pb-roon-player">
 			<div class="mx-auto w-full max-w-6xl font-inter">
-                <?php
-                $term = get_queried_object();
-                $artist_name = !empty($term->name) ? $term->name : 'Unknown Artist';
-                
-                // Thu thập all track của nghệ sĩ
-                $tracks = array();
-                $all_tracks = function_exists('roon_get_library_tracks') ? roon_get_library_tracks() : [];
-                foreach ($all_tracks as $t) {
-                    if (strtolower(trim($t['artist'])) === strtolower(trim($artist_name)) || strtolower($term->slug) === sanitize_title($t['artist'])) {
-                        $tracks[] = $t;
-                    }
-                }
-                ?>
-                <div class="flex items-end justify-between mb-4 flex-wrap gap-3">
-                    <div>
-                        <h1 class="text-[40px] font-bold tracking-tight text-gray-900 leading-tight m-0" style="text-transform: capitalize;">
-                            <?php echo esc_html($artist_name); ?>
-                            <span class="text-[16px] font-normal text-gray-400 ml-2 block sm:inline mt-2 sm:mt-0"><?php echo count($tracks); ?> bài hát</span>
-                        </h1>
-                    </div>
-                </div>
+				<?php
+				$term          = get_queried_object();
+				$artist_name   = ! empty( $term->name ) ? $term->name : 'Unknown Artist';
+				$artist_term_id = ! empty( $term->term_id ) ? (int) $term->term_id : 0;
+				$artist_image  = '';
 
-                <!-- Column headers -->
-                <div class="flex items-center gap-3 pb-2 border-b border-gray-200 mb-1 px-2 mt-6">
-                    <div class="w-11 flex-shrink-0"></div>
-                    <div class="flex items-center gap-1 flex-[2]"><span class="text-[12px] text-gray-400 font-medium">Tên bài hát</span></div>
-                    <div class="hidden md:flex items-center gap-1 flex-[1.5]"><span class="text-[12px] text-gray-400 font-medium">Album</span></div>
-                    <div class="flex items-center justify-center flex-shrink-0 w-10">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="text-gray-400">
-                            <line x1="4" y1="6" x2="20" y2="6"/><line x1="1" y1="12" x2="23" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/>
-                        </svg>
-                    </div>
-                </div>
+				if ( $artist_term_id && function_exists( 'get_field' ) ) {
+					$artist_image_field = get_field( 'artist_image', 'category_' . $artist_term_id );
 
-                <div id="artist-tracks-list" class="flex flex-col">
-                    <?php if (empty($tracks)): ?>
-                    <div class="py-16 text-center text-gray-400">
-                        <p class="text-sm">Chưa có bài hát nào của ca sĩ này!</p>
-                    </div>
-                    <?php else: ?>
-                        <?php foreach ($tracks as $index => $track) : ?>
-                        <div class="artist-track-row roon-track-row flex items-center gap-3 px-2 py-1.5 rounded-lg cursor-pointer group hover:bg-gray-50 transition-colors" data-index="<?php echo $index; ?>">
-                            <div class="relative w-11 h-11 rounded-md overflow-hidden flex-shrink-0 bg-gray-200">
-                                <img src="<?php echo esc_url($track['cover']); ?>" alt="" class="w-full h-full object-cover"/>
-                                <button class="absolute inset-0 bg-black/50 flex items-center justify-center border-none cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity play-this-track"
-                                        data-stream-url="<?php echo esc_url($track['stream_url']); ?>"
-                                        data-track-title="<?php echo esc_attr($track['title']); ?>"
-                                        data-track-artist="<?php echo esc_attr($track['artist']); ?>"
-                                        data-track-cover="<?php echo esc_url($track['cover']); ?>"
-                                        data-track-album-url="<?php echo esc_url($track['post_url']); ?>">
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                                </button>
-                            </div>
-                            <div class="flex flex-col min-w-0 flex-[2]">
-                                <span class="text-[13px] font-medium text-gray-900 truncate"><?php echo esc_html($track['title']); ?></span>
-                                <span class="text-[12px] text-gray-500 truncate"><?php echo esc_html($track['artist']); ?></span>
-                            </div>
-                            <a href="<?php echo esc_url($track['post_url']); ?>" class="hidden md:block flex-[1.5] text-[12.5px] text-roon-blue truncate no-underline hover:underline"><?php echo esc_html($track['album']); ?></a>
-                            <div class="flex items-center gap-2.5 flex-shrink-0 w-10 justify-end">
-                                <span class="text-[12.5px] text-gray-400 tabular-nums"><?php echo esc_html($track['duration']); ?></span>
-                            </div>
-                        </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </div>
-                
-                <!-- Phân trang JS cho artist tracks -->
-                <div id="artist-pagination" class="mt-8 flex justify-center gap-2 items-center hidden">
-                    <button id="artist-prev-page" class="flex items-center justify-center w-8 h-8 rounded-md text-gray-500 hover:bg-gray-100 transition-colors bg-transparent border-none cursor-pointer disabled:opacity-50">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-                    </button>
-                    <div id="artist-page-numbers" class="flex items-center gap-1"></div>
-                    <button id="artist-next-page" class="flex items-center justify-center w-8 h-8 rounded-md text-gray-500 hover:bg-gray-100 transition-colors bg-transparent border-none cursor-pointer disabled:opacity-50">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                    </button>
-                </div>
-                
+					if ( is_array( $artist_image_field ) ) {
+						$artist_image = $artist_image_field['sizes']['medium'] ?? $artist_image_field['url'] ?? '';
+					} elseif ( is_string( $artist_image_field ) ) {
+						$artist_image = $artist_image_field;
+					}
+				}
+
+				$album_posts = array();
+				if ( $artist_term_id ) {
+					$album_posts = get_posts(
+						array(
+							'post_type'      => 'post',
+							'post_status'    => 'publish',
+							'posts_per_page' => -1,
+							'orderby'        => 'date',
+							'order'          => 'DESC',
+							'category__in'   => array( $artist_term_id ),
+						)
+					);
+				}
+
+				$albums      = array();
+				$total_tracks = 0;
+
+				foreach ( $album_posts as $album_post ) {
+					$album_id     = (int) $album_post->ID;
+					$album_tracks = function_exists( 'roon_get_post_album_tracks' ) ? roon_get_post_album_tracks( $album_id ) : array();
+					$album_cover  = function_exists( 'roon_get_album_cover_url' ) ? roon_get_album_cover_url( $album_id ) : '';
+					$album_artist = function_exists( 'roon_get_album_artist_names' ) ? roon_get_album_artist_names( $album_id ) : $artist_name;
+
+					$albums[] = array(
+						'id'          => $album_id,
+						'title'       => get_the_title( $album_id ),
+						'url'         => get_permalink( $album_id ),
+						'cover'       => $album_cover,
+						'year'        => get_the_date( 'Y', $album_id ),
+						'artist'      => $album_artist,
+						'track_count' => count( $album_tracks ),
+						'tracks'      => $album_tracks,
+					);
+
+					$total_tracks += count( $album_tracks );
+				}
+				?>
+
+				<div class="mb-6 flex flex-col gap-5 sm:mb-7 sm:flex-row sm:items-start sm:gap-7">
+					<div class="mx-auto w-40 flex-shrink-0 sm:mx-0 sm:w-44">
+						<?php if ( $artist_image ) : ?>
+							<img
+								class="h-40 w-40 rounded-2xl object-cover shadow-lg sm:h-44 sm:w-44"
+								src="<?php echo esc_url( $artist_image ); ?>"
+								alt="<?php echo esc_attr( $artist_name ); ?>"
+							>
+						<?php else : ?>
+							<div class="flex h-40 w-40 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-50 to-purple-100 text-5xl font-bold text-indigo-400/70 shadow-lg sm:h-44 sm:w-44">
+								<?php
+								$words    = preg_split( '/\s+/', trim( $artist_name ) );
+								$initials = '';
+								foreach ( array_slice( $words, 0, 2 ) as $word ) {
+									$initials .= function_exists( 'mb_substr' ) ? mb_substr( $word, 0, 1 ) : substr( $word, 0, 1 );
+								}
+								echo esc_html( strtoupper( $initials ) );
+								?>
+							</div>
+						<?php endif; ?>
+					</div>
+
+					<div class="flex min-w-0 flex-1 flex-col gap-2 text-center sm:text-left">
+						<h1 class="m-0 text-[40px] font-bold tracking-tight text-gray-900 leading-tight" style="text-transform: capitalize;">
+							<?php echo esc_html( $artist_name ); ?>
+						</h1>
+						<p class="m-0 text-[14px] text-gray-500">
+							<?php echo esc_html( count( $albums ) ); ?> album
+							<?php if ( 1 !== count( $albums ) ) : ?>s<?php endif; ?>
+							<span class="mx-2 text-gray-300">&bull;</span>
+							<?php echo esc_html( $total_tracks ); ?> bài hát
+						</p>
+						<p class="m-0 max-w-2xl text-[13px] text-gray-400">
+							Chọn một album bên dưới để mở danh sách bài hát của ca sĩ này.
+						</p>
+					</div>
+				</div>
+
+				<div class="mb-4 flex items-center justify-between gap-3 border-b border-gray-200 pb-3">
+					<h2 class="m-0 text-[18px] font-semibold text-gray-900">Danh sách album</h2>
+					<span class="text-[12px] text-gray-400"><?php echo esc_html( count( $albums ) ); ?> kết quả</span>
+				</div>
+
+				<div id="artist-albums-list" class="flex flex-col gap-4">
+					<?php if ( empty( $albums ) ) : ?>
+						<div class="rounded-2xl border border-dashed border-gray-200 py-16 text-center text-gray-400">
+							<p class="text-sm">Chưa có album nào của ca sĩ này.</p>
+						</div>
+					<?php else : ?>
+						<?php foreach ( $albums as $index => $album ) : ?>
+							<div class="artist-album-card overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+								<button
+									type="button"
+									class="artist-album-toggle flex w-full items-center gap-4 border-none bg-transparent px-4 py-4 text-left cursor-pointer transition-colors hover:bg-gray-50"
+									data-target="artist-album-panel-<?php echo esc_attr( $index ); ?>"
+									aria-expanded="false"
+								>
+									<div class="h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl bg-gray-100">
+										<?php if ( ! empty( $album['cover'] ) ) : ?>
+											<img src="<?php echo esc_url( $album['cover'] ); ?>" alt="<?php echo esc_attr( $album['title'] ); ?>" class="h-full w-full object-cover">
+										<?php else : ?>
+											<div class="flex h-full w-full items-center justify-center text-gray-300">
+												<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+											</div>
+										<?php endif; ?>
+									</div>
+
+									<div class="min-w-0 flex-1">
+										<div class="truncate text-[16px] font-semibold text-gray-900"><?php echo esc_html( $album['title'] ); ?></div>
+										<div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px] text-gray-500">
+											<span><?php echo esc_html( $album['track_count'] ); ?> bài hát</span>
+											<?php if ( ! empty( $album['year'] ) ) : ?>
+												<span><?php echo esc_html( $album['year'] ); ?></span>
+											<?php endif; ?>
+											<?php if ( ! empty( $album['artist'] ) ) : ?>
+												<span class="truncate"><?php echo esc_html( $album['artist'] ); ?></span>
+											<?php endif; ?>
+										</div>
+									</div>
+
+									<div class="flex items-center gap-3 pl-2">
+										<a
+											href="<?php echo esc_url( $album['url'] ); ?>"
+											class="artist-album-link hidden rounded-full bg-gray-100 px-3 py-1.5 text-[12px] font-medium text-gray-700 no-underline hover:bg-gray-200 sm:inline-block"
+										>
+											Mở album
+										</a>
+										<span class="artist-album-chevron text-gray-400 transition-transform duration-200">
+											<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+										</span>
+									</div>
+								</button>
+
+								<div id="artist-album-panel-<?php echo esc_attr( $index ); ?>" class="artist-album-panel hidden border-t border-gray-100 bg-gray-50/60 px-4 py-3">
+									<?php if ( empty( $album['tracks'] ) ) : ?>
+										<p class="m-0 py-4 text-sm text-gray-500">Album này chưa có danh sách bài hát.</p>
+									<?php else : ?>
+										<div class="mb-2 flex items-center gap-3 px-2 pb-2 text-[12px] text-gray-400">
+											<div class="w-8 flex-shrink-0 text-right">#</div>
+											<div class="flex-[2]">Tên bài hát</div>
+											<div class="hidden md:block flex-[1.3]">Thời lượng</div>
+										</div>
+										<div class="flex flex-col divide-y divide-gray-100 rounded-xl bg-white">
+											<?php foreach ( $album['tracks'] as $track_index => $track ) : ?>
+												<?php
+												$track_title    = ! empty( $track['track_title'] ) ? $track['track_title'] : 'Unknown Track';
+												$track_duration = ! empty( $track['track_duration'] ) ? $track['track_duration'] : '--:--';
+												$track_stream   = ! empty( $track['stream_url'] ) ? $track['stream_url'] : '#';
+												?>
+												<div class="group flex items-center gap-3 px-2 py-2.5">
+													<div class="w-8 flex-shrink-0 text-right text-[12px] font-medium text-gray-400">
+														<?php echo esc_html( $track_index + 1 ); ?>
+													</div>
+													<button
+														type="button"
+														class="play-this-track ml-1 flex-shrink-0 cursor-pointer border-none bg-transparent p-0 transition-transform hover:scale-110"
+														data-stream-url="<?php echo esc_url( $track_stream ); ?>"
+														data-track-title="<?php echo esc_attr( $track_title ); ?>"
+														data-track-artist="<?php echo esc_attr( $album['artist'] ); ?>"
+														data-track-cover="<?php echo esc_url( $album['cover'] ); ?>"
+														data-track-album-url="<?php echo esc_url( $album['url'] ); ?>"
+													>
+														<svg width="18" height="18" viewBox="0 0 24 24" fill="#3b3ef6">
+															<circle cx="12" cy="12" r="10"/>
+															<polygon points="10 8 16 12 10 16 10 8" fill="white"/>
+														</svg>
+													</button>
+													<div class="min-w-0 flex-[2]">
+														<div class="truncate text-[13.5px] font-medium text-gray-800"><?php echo esc_html( $track_title ); ?></div>
+													</div>
+													<div class="hidden md:block min-w-0 flex-[1.3] text-[12.5px] text-gray-400 tabular-nums">
+														<?php echo esc_html( $track_duration ); ?>
+													</div>
+												</div>
+											<?php endforeach; ?>
+										</div>
+									<?php endif; ?>
+								</div>
+							</div>
+						<?php endforeach; ?>
+					<?php endif; ?>
+				</div>
 			</div>
 		</div>
 	</div>
 
-	<!-- Audio Player Fixed Bottom -->
 	<?php get_template_part( 'template-parts/roon', 'player' ); ?>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    var rows = Array.from(document.querySelectorAll('.artist-track-row'));
-    var currentPage = 1;
-    var itemsPerPage = 10;
-    var totalPages = Math.ceil(rows.length / itemsPerPage);
-    
-    var paginationWrapper = document.getElementById('artist-pagination');
-    var prevBtn = document.getElementById('artist-prev-page');
-    var nextBtn = document.getElementById('artist-next-page');
-    var pageNumbers = document.getElementById('artist-page-numbers');
+	var albumToggles = Array.from(document.querySelectorAll('.artist-album-toggle'));
 
-    function renderPagination() {
-        if (totalPages <= 1) return;
-        paginationWrapper.classList.remove('hidden');
-        if (prevBtn) prevBtn.disabled = currentPage === 1;
-        if (nextBtn) nextBtn.disabled = currentPage === totalPages;
+	albumToggles.forEach(function(toggle) {
+		toggle.addEventListener('click', function(event) {
+			if (event.target.closest('.artist-album-link')) {
+				return;
+			}
 
-        if (pageNumbers) {
-            pageNumbers.innerHTML = '';
-            for (let i = 1; i <= totalPages; i++) {
-                if (totalPages > 6 && i !== 1 && i !== totalPages && Math.abs(i - currentPage) > 1) {
-                    if (Math.abs(i - currentPage) === 2) {
-                        const dot = document.createElement('span');
-                        dot.className = 'text-gray-400 px-1';
-                        dot.textContent = '...';
-                        pageNumbers.appendChild(dot);
-                    }
-                    continue;
-                }
-                const btn = document.createElement('button');
-                btn.className = 'w-8 h-8 rounded-md border-none cursor-pointer text-[13px] font-medium transition-colors ';
-                btn.className += i === currentPage ? 'bg-gray-800 text-white' : 'bg-transparent text-gray-600 hover:bg-gray-100 hover:text-gray-900';
-                btn.textContent = i;
-                if (i === currentPage) { btn.disabled = true; }
-                btn.onclick = function() {
-                    currentPage = i;
-                    renderPage();
-                    document.getElementById('roon-content').scrollTop = 0;
-                };
-                pageNumbers.appendChild(btn);
-            }
-        }
-    }
+			var panelId = toggle.getAttribute('data-target');
+			var panel = panelId ? document.getElementById(panelId) : null;
+			var isExpanded = toggle.getAttribute('aria-expanded') === 'true';
 
-    function renderPage() {
-        var start = (currentPage - 1) * itemsPerPage;
-        var end = start + itemsPerPage;
-        rows.forEach(function(row, idx) {
-            if (idx >= start && idx < end) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
-        });
-        renderPagination();
-    }
+			albumToggles.forEach(function(otherToggle) {
+				var otherPanelId = otherToggle.getAttribute('data-target');
+				var otherPanel = otherPanelId ? document.getElementById(otherPanelId) : null;
 
-    if (prevBtn) prevBtn.addEventListener('click', function() { if (currentPage > 1) { currentPage--; renderPage(); } });
-    if (nextBtn) nextBtn.addEventListener('click', function() { if (currentPage < totalPages) { currentPage++; renderPage(); } });
+				otherToggle.setAttribute('aria-expanded', 'false');
+				otherToggle.classList.remove('bg-gray-50');
 
-    renderPage();
+				if (otherPanel) {
+					otherPanel.classList.add('hidden');
+				}
+			});
+
+			if (!panel || isExpanded) {
+				return;
+			}
+
+			toggle.setAttribute('aria-expanded', 'true');
+			toggle.classList.add('bg-gray-50');
+			panel.classList.remove('hidden');
+		});
+	});
 });
 </script>
 

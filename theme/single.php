@@ -139,6 +139,15 @@
 							$tracks      = function_exists( 'roon_get_post_album_tracks' ) ? roon_get_post_album_tracks( get_the_ID() ) : array();
 							$artist_name = function_exists( 'roon_get_album_artist_name' ) ? roon_get_album_artist_name( get_the_ID() ) : 'Unknown Artist';
 							$album_cover = function_exists( 'roon_get_album_cover_url' ) ? roon_get_album_cover_url( get_the_ID() ) : get_the_post_thumbnail_url( get_the_ID(), 'thumbnail' );
+							$track_artist_display = $artist_name;
+
+							if ( isset( $artist_terms ) && $artist_terms && ! is_wp_error( $artist_terms ) ) {
+								$artist_names = wp_list_pluck( $artist_terms, 'name' );
+
+								if ( ! empty( $artist_names ) ) {
+									$track_artist_display = implode( ', ', $artist_names );
+								}
+							}
 
 							if ( 'Unknown Artist' === $artist_name && isset( $artist_terms ) && ! is_wp_error( $artist_terms ) && ! empty( $artist_terms ) ) {
 								$artist_name = $artist_terms[0]->name;
@@ -162,7 +171,7 @@
 											<button class="ml-1 flex-shrink-0 cursor-pointer border-none bg-transparent p-0 transition-transform hover:scale-110"
 													data-stream-url="<?php echo esc_url( $t_url ); ?>"
 													data-track-title="<?php echo esc_attr( $t_title ); ?>"
-													data-track-artist="<?php echo esc_attr( $artist_name ); ?>"
+													data-track-artist="<?php echo esc_attr( $track_artist_display ); ?>"
 													data-track-cover="<?php echo esc_url( $album_cover ); ?>">
 												<svg width="20" height="20" viewBox="0 0 24 24" fill="#3b3ef6">
 													<circle cx="12" cy="12" r="10"/>
@@ -174,7 +183,7 @@
 											<div class="min-w-0 flex-[2] truncate text-[13.5px] font-medium text-gray-800"><?php echo esc_html( $t_title ); ?></div>
 
 											<!-- Artist Name -->
-											<div class="hidden md:block min-w-0 flex-[1.5] truncate text-[12.5px] text-gray-500"><?php echo esc_html( $artist_name ); ?></div>
+											<div class="hidden md:block min-w-0 flex-[1.5] truncate text-[12.5px] text-gray-500" title="<?php echo esc_attr( $track_artist_display ); ?>"><?php echo esc_html( $track_artist_display ); ?></div>
 
 											<!-- Right actions -->
 											<div class="flex flex-shrink-0 items-center gap-4">

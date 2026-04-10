@@ -20,6 +20,16 @@ $popular_albums = function_exists('roon_get_popular_albums') ? roon_get_popular_
 	$cache_key = 'roon_popular_artists_top10';
 	$popular_artists = get_transient($cache_key);
 
+	if ( is_array($popular_artists) ) {
+		foreach ($popular_artists as $cached_artist) {
+			if ( ! is_array($cached_artist) || ! array_key_exists('url', $cached_artist) ) {
+				$popular_artists = false;
+				delete_transient($cache_key);
+				break;
+			}
+		}
+	}
+
 	if ( false === $popular_artists ) {
 		// Dùng SQL query gộp (JOIN) để sum tổng view count của mỗi ca sĩ (category) một lần duy nhất thay vì N+1 queries.
 		$query = "
@@ -62,6 +72,7 @@ $popular_albums = function_exists('roon_get_popular_albums') ? roon_get_popular_
 				'initials' => strtoupper($initials),
 				'count'    => $term->count, // số album
 				'views'    => $artist_views,
+				'url'      => get_term_link($term),
 			);
 		}
 
@@ -250,7 +261,7 @@ $popular_albums = function_exists('roon_get_popular_albums') ? roon_get_popular_
         <?php if (!empty($popular_artists)) : ?>
         <div class="flex gap-5 overflow-x-auto pb-2" style="scrollbar-width:none;">
             <?php foreach ($popular_artists as $artist) : ?>
-            <div data-page="fav-artists" class="group flex flex-col items-center text-center flex-shrink-0 w-28 cursor-pointer">
+            <a href="<?php echo esc_url($artist['url'] ?? '#'); ?>" class="group flex flex-col items-center text-center flex-shrink-0 w-28 cursor-pointer no-underline">
                 <!-- Avatar -->
                 <div class="w-full pb-[100%] rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 mb-3 relative overflow-hidden shadow-sm group-hover:shadow-md transition-shadow duration-200 group-hover:scale-[1.03]" title="<?php echo esc_attr($artist['name']); ?>">
                     <span class="absolute inset-0 flex items-center justify-center text-2xl font-bold text-indigo-400/70"><?php echo esc_html($artist['initials']); ?></span>
@@ -258,7 +269,7 @@ $popular_albums = function_exists('roon_get_popular_albums') ? roon_get_popular_
                 <!-- Name -->
                 <p class="text-[13px] font-semibold text-gray-800 leading-snug mb-0.5 truncate w-full px-1"><?php echo esc_html($artist['name']); ?></p>
                 <p class="text-[11px] text-gray-400 truncate w-full"><?php echo number_format_i18n($artist['views']); ?> lượt nghe</p>
-            </div>
+            </a>
             <?php endforeach; ?>
         </div>
         <?php else : ?>
