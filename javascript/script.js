@@ -303,17 +303,24 @@
      * ======================================================= */
     const RoonPlayer = {
       audio: null,
+      audioSource: null,
+      stateStorageKey: 'roonPlayerState',
+      restoreModeKey: 'roonPlayerRestoreMode',
       isPlaying: false,
       isMuted: false,
       isShuffle: false,
       repeatMode: 'none', // 'none' | 'all' | 'one'
       volumeBeforeMute: 0.5,
+      lastSavedSecond: -1,
       playlist: [],       // [{url, title, artist, cover, albumUrl}]
       currentTrackIndex: 0,
+      m4aObjectUrl: null,
+      loadRequestId: 0,
       affiliateUrl: "",
       dailyAffiliateLimit: 2,
       init() {
         this.audio = document.getElementById('roon-audio');
+        this.audioSource = document.getElementById('roon-audio-source');
         if (!this.audio) return;
 
         this.audio.volume = 0.5;
@@ -326,26 +333,44 @@
         this.bindSidebarToggle();
 
         window.addEventListener('beforeunload', () => {
+          sessionStorage.setItem(this.restoreModeKey, 'pause-on-restore');
           this.saveState();
+          this.clearObjectUrl();
+        });
+        window.addEventListener('pagehide', () => {
+          this.saveState();
+        });
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'hidden') {
+            this.saveState();
+          }
         });
       },
       saveState() {
         if (!this.playlist || !this.playlist.length) return;
         try {
-          sessionStorage.setItem('roonPlayerState', JSON.stringify({
+          const currentSrc = this.getCurrentAudioSrc();
+          const playerState = {
             playlist: this.playlist,
             currentIndex: this.currentTrackIndex,
             currentTime: this.audio.currentTime || 0,
             isPlaying: !this.audio.paused && this.isPlaying,
             repeatMode: this.repeatMode,
             isShuffle: this.isShuffle,
-            src: this.audio.src || ''
-          }));
+            src: currentSrc
+          };
+
+          const encodedState = JSON.stringify(playerState);
+          sessionStorage.setItem(this.stateStorageKey, encodedState);
+          localStorage.setItem(this.stateStorageKey, encodedState);
         } catch (e) {}
       },
       restoreState() {
         try {
-          const st = sessionStorage.getItem('roonPlayerState');
+          const st = sessionStorage.getItem(this.stateStorageKey) || localStorage.getItem(this.stateStorageKey);
+          const restoreMode = sessionStorage.getItem(this.restoreModeKey);
+          const shouldPauseOnRestore = restoreMode === 'pause-on-restore';
+          sessionStorage.removeItem(this.restoreModeKey);
           if (!st) return;
           const pst = JSON.parse(st);
           if (pst.playlist && pst.playlist.length) {
@@ -370,19 +395,44 @@
 
             // Restore audio details
             if (pst.src) {
-              this.audio.src = pst.src;
-              this.audio.currentTime = pst.currentTime || 0;
-              if (pst.isPlaying) {
-                const playPromise = this.audio.play();
-                if (playPromise !== undefined) {
-                    playPromise.then(() => {
-                        this.isPlaying = true;
-                        this.updatePlayUI();
-                    }).catch(() => {
-                        this.isPlaying = false;
-                        this.updatePlayUI();
-                    });
+              const resumedTime = Number(pst.currentTime) || 0;
+              const shouldResumePlay = !!pst.isPlaying && !shouldPauseOnRestore;
+
+              this.setAudioSource(pst.src);
+              this.audio.load();
+
+              const resumePlaybackState = () => {
+                if (!Number.isFinite(resumedTime)) return;
+                if (this.audio.duration && Number.isFinite(this.audio.duration)) {
+                  this.audio.currentTime = Math.min(Math.max(resumedTime, 0), this.audio.duration);
+                } else {
+                  this.audio.currentTime = Math.max(resumedTime, 0);
                 }
+
+                this.lastSavedSecond = Math.floor(this.audio.currentTime || 0);
+                $('#player-current-time').text(this.formatTime(this.audio.currentTime || 0));
+
+                if (shouldResumePlay) {
+                  const playPromise = this.audio.play();
+                  if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                      this.isPlaying = true;
+                      this.updatePlayUI();
+                    }).catch(() => {
+                      this.isPlaying = false;
+                      this.updatePlayUI();
+                    });
+                  }
+                } else {
+                  this.isPlaying = false;
+                  this.updatePlayUI();
+                }
+              };
+
+              if (this.audio.readyState >= 1) {
+                resumePlaybackState();
+              } else {
+                this.audio.addEventListener('loadedmetadata', resumePlaybackState, { once: true });
               }
             }
           }
@@ -517,6 +567,12 @@
           $('#player-progress-fill').css('width', pct + '%');
           $('#player-progress-thumb').css('left', pct + '%');
           $('#player-current-time').text(this.formatTime(audio.currentTime));
+
+          const currentSecond = Math.floor(audio.currentTime || 0);
+          if (currentSecond !== this.lastSavedSecond) {
+            this.lastSavedSecond = currentSecond;
+            this.saveState();
+          }
         });
 
         audio.addEventListener('loadedmetadata', () => {
@@ -535,8 +591,12 @@
           }
         });
 
-        audio.addEventListener('play',  () => { this.isPlaying = true;  this.updatePlayUI(); });
-        audio.addEventListener('pause', () => { this.isPlaying = false; this.updatePlayUI(); });
+        audio.addEventListener('play',  () => { this.isPlaying = true;  this.updatePlayUI(); this.saveState(); });
+        audio.addEventListener('pause', () => { this.isPlaying = false; this.updatePlayUI(); this.saveState(); });
+        audio.addEventListener('error', () => {
+          this.isPlaying = false;
+          this.updatePlayUI();
+        });
       },
       bindProgressBar() {
         let isDragging = false;
@@ -597,21 +657,128 @@
         this.loadTrack(t.url, t.title, t.artist, t.cover, t.albumUrl);
       },
 
+      clearObjectUrl() {
+        if (this.m4aObjectUrl) {
+          URL.revokeObjectURL(this.m4aObjectUrl);
+          this.m4aObjectUrl = null;
+        }
+      },
+
+      getMimeType(url) {
+        const value = String(url || '').toLowerCase();
+        if (/\.m4a(?:$|[?#])/.test(value)) return 'audio/mp4';
+        if (/\.mp3(?:$|[?#])/.test(value)) return 'audio/mpeg';
+        if (/\.ogg(?:$|[?#])/.test(value)) return 'audio/ogg';
+        if (/\.wav(?:$|[?#])/.test(value)) return 'audio/wav';
+        return 'audio/mpeg';
+      },
+
+      setAudioSource(url) {
+        const src = String(url || '').trim();
+        const mimeType = this.getMimeType(src);
+
+        if (this.audioSource) {
+          this.audioSource.setAttribute('src', src);
+          this.audioSource.setAttribute('type', mimeType);
+          this.audio.removeAttribute('src');
+        } else {
+          this.audio.src = src;
+        }
+      },
+
+      getCurrentAudioSrc() {
+        const current = (this.audio && typeof this.audio.currentSrc === 'string') ? this.audio.currentSrc.trim() : '';
+        if (current) return current;
+
+        if (this.audioSource) {
+          const sourceSrc = (this.audioSource.getAttribute('src') || '').trim();
+          if (sourceSrc) return sourceSrc;
+        }
+
+        const direct = (this.audio && typeof this.audio.src === 'string') ? this.audio.src.trim() : '';
+        if (direct && direct !== window.location.href) return direct;
+
+        return '';
+      },
+
+      isM4AUrl(url) {
+        return /\.m4a(?:$|[?#])/i.test(String(url || ''));
+      },
+
+      resolveTrackUrl(url) {
+        const rawUrl = String(url || '').trim();
+        if (!rawUrl || !this.isM4AUrl(rawUrl)) {
+          return Promise.resolve(rawUrl);
+        }
+
+        let absoluteUrl = rawUrl;
+        try {
+          absoluteUrl = new URL(rawUrl, window.location.href).toString();
+        } catch (e) {}
+
+        try {
+          const target = new URL(absoluteUrl, window.location.href);
+          if (target.origin !== window.location.origin) {
+            return Promise.resolve(rawUrl);
+          }
+        } catch (e) {
+          return Promise.resolve(rawUrl);
+        }
+
+        return fetch(absoluteUrl, { credentials: 'same-origin' })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`Failed to fetch audio: ${response.status}`);
+            }
+            return response.blob();
+          })
+          .then((blob) => {
+            if (!blob || !blob.size) {
+              throw new Error('Empty audio blob');
+            }
+
+            if (blob.type && blob.type !== 'application/octet-stream') {
+              return blob;
+            }
+
+            return blob.arrayBuffer().then((buffer) => new Blob([buffer], { type: 'audio/mp4' }));
+          })
+          .then((blob) => {
+            this.clearObjectUrl();
+            this.m4aObjectUrl = URL.createObjectURL(blob);
+            return this.m4aObjectUrl;
+          })
+          .catch(() => rawUrl);
+      },
+
       loadTrack(url, title, artist, cover, albumUrl) {
         if (!url || url === '#') {
+          if ((window.location.pathname || '').indexOf('/adele-19') !== -1) {
+            console.log('[ROON DEBUG] missing stream URL', { title, url, pathname: window.location.pathname });
+          }
           this.updateTrackInfo(title, artist, cover, albumUrl);
           this.fakePlay();
           return;
         }
-        this.audio.src = url;
-        this.audio.load();
-        this.audio.play().catch(() => {});
+
         this.updateTrackInfo(title, artist, cover, albumUrl);
+        const requestId = ++this.loadRequestId;
+
+        this.resolveTrackUrl(url).then((playableUrl) => {
+          if (requestId !== this.loadRequestId) {
+            return;
+          }
+
+          this.setAudioSource(playableUrl || url);
+          this.audio.load();
+          this.audio.play().catch(() => {});
+          this.saveState();
+        });
       },
 
       fakePlay() {
-        // Khi chưa có src thực, chỉ update UI
-        this.isPlaying = true;
+        // Không bật trạng thái đang phát nếu chưa có nguồn audio thực.
+        this.isPlaying = false;
         this.updatePlayUI();
       },
 
@@ -634,7 +801,8 @@
       },
 
       togglePlay() {
-        if (!this.audio.src || this.audio.src === window.location.href) {
+        const currentSrc = this.getCurrentAudioSrc();
+        if (!currentSrc) {
           this.isPlaying = !this.isPlaying;
           this.updatePlayUI();
           return;

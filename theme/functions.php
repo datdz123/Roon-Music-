@@ -457,9 +457,12 @@ function roon_proxy_jellyfin_stream($item_id)
 }
 
 /**
- * Convert a Jellyfin download URL into a stream URL while preserving the item ID.
+ * Normalize track URLs from ACF/Jellyfin into download + stream URLs.
  *
- * @param string $download_url Raw Jellyfin download URL from ACF.
+ * For non-Jellyfin URLs (for example local uploaded .m4a files), stream_url
+ * falls back to the direct download URL so the HTML5 audio element can play it.
+ *
+ * @param string|array<string,mixed> $download_url Raw track file value from ACF.
  * @return array{download_url:string,stream_url:string,item_id:string,base_url:string}
  */
 function roon_get_jellyfin_track_urls($download_url)
@@ -471,17 +474,47 @@ function roon_get_jellyfin_track_urls($download_url)
 		'base_url'     => '',
 	);
 
+	if (is_array($download_url)) {
+		if (! empty($download_url['url']) && is_string($download_url['url'])) {
+			$download_url = $download_url['url'];
+		} elseif (! empty($download_url['link']) && is_string($download_url['link'])) {
+			$download_url = $download_url['link'];
+		} elseif (! empty($download_url['ID'])) {
+			$download_url = (string) $download_url['ID'];
+		} elseif (! empty($download_url['id'])) {
+			$download_url = (string) $download_url['id'];
+		} else {
+			$download_url = '';
+		}
+	}
+
+	if (is_int($download_url) || (is_string($download_url) && ctype_digit($download_url))) {
+		$attachment_url = wp_get_attachment_url((int) $download_url);
+		$download_url   = is_string($attachment_url) ? $attachment_url : '';
+	}
+
 	if (! is_string($download_url)) {
-		return $result;
+		$download_url = '';
 	}
 
 	$download_url = trim($download_url);
+
+	if ('' !== $download_url) {
+		if (0 === strpos($download_url, '//')) {
+			$download_url = (is_ssl() ? 'https:' : 'http:') . $download_url;
+		} elseif (0 === strpos($download_url, '/')) {
+			$download_url = home_url($download_url);
+		} elseif (false === strpos($download_url, '://') && false === strpos($download_url, 'data:')) {
+			$download_url = home_url('/' . ltrim($download_url, '/'));
+		}
+	}
 
 	if ('' === $download_url) {
 		return $result;
 	}
 
 	$result['download_url'] = $download_url;
+	$result['stream_url']   = $download_url;
 
 	$parts = wp_parse_url($download_url);
 

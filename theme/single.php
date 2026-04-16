@@ -221,6 +221,7 @@
 
 	<!-- Audio Player Fixed Bottom -->
 	<?php get_template_part( 'template-parts/roon', 'player' ); ?>
+	
 </div>
 
 <?php wp_footer(); ?>

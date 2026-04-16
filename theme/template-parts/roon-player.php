@@ -33,7 +33,9 @@
      class="fixed bottom-0 left-0 right-0 z-100 flex flex-wrap items-center gap-3 border-t border-gray-200 bg-white px-3 py-2 shadow-[0_-2px_12px_rgba(0,0,0,0.06)] font-inter sm:px-4 md:h-roon-player md:flex-nowrap md:gap-4 md:py-0">
 
     <!-- Hidden audio element -->
-    <audio id="roon-audio" preload="none"></audio>
+    <audio id="roon-audio" preload="metadata">
+        <source id="roon-audio-source" src="" type="audio/mpeg" />
+    </audio>
 
     <!-- ── Left: Track Info (260px) ── -->
     <div class="flex min-w-0 flex-1 items-center gap-2.5 md:w-[260px] md:flex-shrink-0 md:flex-none">
