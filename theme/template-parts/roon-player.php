@@ -33,9 +33,7 @@
      class="fixed bottom-0 left-0 right-0 z-100 flex flex-wrap items-center gap-3 border-t border-gray-200 bg-white px-3 py-2 shadow-[0_-2px_12px_rgba(0,0,0,0.06)] font-inter sm:px-4 md:h-roon-player md:flex-nowrap md:gap-4 md:py-0">
 
     <!-- Hidden audio element -->
-    <audio id="roon-audio" preload="metadata">
-        <source id="roon-audio-source" src="" type="audio/mpeg" />
-    </audio>
+    <audio id="roon-audio" preload="none"></audio>
 
     <!-- ── Left: Track Info (260px) ── -->
     <div class="flex min-w-0 flex-1 items-center gap-2.5 md:w-[260px] md:flex-shrink-0 md:flex-none">
@@ -143,11 +141,32 @@
 
 </div>
 
+<div id="roon-affiliate-overlay" class="hidden fixed inset-0 z-[999] flex items-center justify-center bg-black/20 backdrop-blur-xl p-4">
+    <div class="w-full max-w-lg rounded-[32px] border border-gray-200 bg-white/95 p-6 text-center shadow-2xl backdrop-saturate-150">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.35em] text-gray-500">HARMONIC WAVE</p>
+        <h2 class="mt-4 text-xl font-semibold text-gray-900">Bạn đang nghe nhạc miễn phí tại Harmonic Wave.</h2>
+        <p class="mt-4 text-sm leading-6 text-gray-600">Hãy ủng hộ chúng mình bằng cách tham quan gian hàng đối tác để duy trì server chất lượng cao nhé!</p>
+        <div class="mt-6 grid gap-3">
+            <button id="roon-affiliate-open" type="button" class="inline-flex items-center justify-center rounded-full bg-gray-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-gray-800">ỦNG HỘ CHÚNG TÔI</button>
+        </div>
+    </div>
+</div>
+
 <!-- Affiliate Setup script for Ads popup -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     var playerElement = document.getElementById('roon-player');
+    var overlay = document.getElementById('roon-affiliate-overlay');
+    var affiliateOpen = document.getElementById('roon-affiliate-open');
+    var audioPlayer = document.getElementById('roon-audio');
+    var volumeFill = document.getElementById('player-volume-fill');
+    var volumeThumb = document.getElementById('player-volume-thumb');
     var rootStyle = document.documentElement.style;
+    var affiliateTimer = null;
+    var affiliatePopupShown = false;
+    var originalVolume = audioPlayer ? audioPlayer.volume : 0.75;
+    var wasPlaying = false;
+    var todayKey = 'roon_ad_count_' + new Date().toDateString();
 
     function syncPlayerOffset() {
         if (!playerElement) {
@@ -159,6 +178,101 @@ document.addEventListener('DOMContentLoaded', function() {
         rootStyle.setProperty('--roon-player-offset', 'calc(' + playerElement.offsetHeight + 'px + env(safe-area-inset-bottom, 0px) + ' + gap + 'px)');
     }
 
+    function getAdOpenedCount() {
+        return parseInt(localStorage.getItem(todayKey) || '0', 10) || 0;
+    }
+
+    function incrementAdOpenedCount() {
+        localStorage.setItem(todayKey, getAdOpenedCount() + 1);
+    }
+
+    function canShowAffiliate() {
+        return (
+            window.roonPlayerSettings &&
+            window.roonPlayerSettings.affiliateUrl &&
+            getAdOpenedCount() < (parseInt(window.roonPlayerSettings.dailyAffiliateLimit, 10) || 2) &&
+            !affiliatePopupShown
+        );
+    }
+
+    function updateVolumeUI(volume) {
+        if (volumeFill) {
+            volumeFill.style.width = Math.round(volume * 100) + '%';
+        }
+        if (volumeThumb) {
+            volumeThumb.style.left = Math.round(volume * 100) + '%';
+        }
+    }
+
+    function showAffiliateOverlay() {
+        if (!canShowAffiliate() || !overlay) {
+            return;
+        }
+
+        affiliatePopupShown = true;
+        document.body.classList.add('roon-affiliate-active');
+
+        if (audioPlayer) {
+            wasPlaying = !audioPlayer.paused;
+            originalVolume = audioPlayer.volume;
+            audioPlayer.volume = 0.3;
+            updateVolumeUI(audioPlayer.volume);
+            audioPlayer.pause();
+        }
+
+        overlay.classList.remove('hidden');
+    }
+
+    function hideAffiliateOverlay() {
+        if (!overlay) {
+            return;
+        }
+
+        overlay.classList.add('hidden');
+        document.body.classList.remove('roon-affiliate-active');
+
+        if (audioPlayer) {
+            audioPlayer.volume = originalVolume;
+            updateVolumeUI(audioPlayer.volume);
+            if (wasPlaying) {
+                audioPlayer.play().catch(function() {
+                    // ignore play promise rejection if browser blocks autoplay
+                });
+            }
+        }
+    }
+
+    function clearAffiliateTimer() {
+        if (affiliateTimer) {
+            clearTimeout(affiliateTimer);
+            affiliateTimer = null;
+        }
+    }
+
+    function scheduleAffiliateOverlay() {
+        clearAffiliateTimer();
+
+        if (!canShowAffiliate() || !audioPlayer || audioPlayer.paused) {
+            return;
+        }
+
+        affiliateTimer = setTimeout(function() {
+            if (audioPlayer && !audioPlayer.paused) {
+                showAffiliateOverlay();
+            }
+        }, 10000);
+    }
+
+    function openAffiliateLink() {
+        if (!window.roonPlayerSettings || !window.roonPlayerSettings.affiliateUrl) {
+            return;
+        }
+
+        window.open(window.roonPlayerSettings.affiliateUrl, '_blank');
+        incrementAdOpenedCount();
+        hideAffiliateOverlay();
+    }
+
     if (playerElement) {
         syncPlayerOffset();
         if (typeof ResizeObserver !== 'undefined') {
@@ -168,25 +282,19 @@ document.addEventListener('DOMContentLoaded', function() {
         window.addEventListener('orientationchange', syncPlayerOffset);
     }
 
-    function openShopeeAd() {
-        if (!window.roonPlayerSettings || !window.roonPlayerSettings.affiliateUrl) return;
-        
-        let adOpenedCount = parseInt(localStorage.getItem('roon_ad_count_' + new Date().toDateString()) || '0');
-        const adLimit = parseInt(window.roonPlayerSettings.dailyAffiliateLimit) || 2;
-        const affUrl = window.roonPlayerSettings.affiliateUrl;
-
-        if (adOpenedCount >= adLimit) return;
-        
-        window.open(affUrl, '_blank');
-        localStorage.setItem('roon_ad_count_' + new Date().toDateString(), adOpenedCount + 1);
+    if (audioPlayer) {
+        audioPlayer.addEventListener('play', scheduleAffiliateOverlay);
+        audioPlayer.addEventListener('pause', clearAffiliateTimer);
+        audioPlayer.addEventListener('ended', clearAffiliateTimer);
+        audioPlayer.addEventListener('volumechange', function() {
+            updateVolumeUI(audioPlayer.volume);
+        });
     }
 
-    document.addEventListener('click', function(e) {
-        // Áp dụng cho: Nút bài hát, Nút Phát tất cả, Nút Play của Player chính.
-        const isPlayBtn = e.target.closest('[data-stream-url], #play-all-tracks, #player-play-pause');
-        if (isPlayBtn) {
-            openShopeeAd();
-        }
-    });
+    if (affiliateOpen) {
+        affiliateOpen.addEventListener('click', openAffiliateLink);
+    }
+
+    updateVolumeUI(audioPlayer ? audioPlayer.volume : originalVolume);
 });
 </script>
