@@ -268,7 +268,26 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        window.open(window.roonPlayerSettings.affiliateUrl, '_blank');
+        var affiliateUrl = String(window.roonPlayerSettings.affiliateUrl || '').trim();
+        affiliateUrl = affiliateUrl.replace(/[\u200B-\u200D\uFEFF]/g, '');
+
+        if (!affiliateUrl) {
+            return;
+        }
+
+        try {
+            var normalizedUrl = new URL(affiliateUrl);
+
+            if (normalizedUrl.hostname === 's.shopee.vn' && normalizedUrl.pathname !== '/') {
+                normalizedUrl.pathname = normalizedUrl.pathname.replace(/\/+$/, '');
+            }
+
+            affiliateUrl = normalizedUrl.toString();
+        } catch (error) {
+            return;
+        }
+
+        window.open(affiliateUrl, '_blank', 'noopener,noreferrer');
         incrementAdOpenedCount();
         hideAffiliateOverlay();
     }

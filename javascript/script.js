@@ -586,8 +586,16 @@
           } else if (this.repeatMode === 'all' || this.isShuffle) {
             this.playNext();
           } else {
-            this.isPlaying = false;
-            this.updatePlayUI();
+            // Auto-advance to next track; stop only at end of playlist
+            const nextIdx = this.currentTrackIndex + 1;
+            if (nextIdx < this.playlist.length) {
+              this.currentTrackIndex = nextIdx;
+              const t = this.playlist[nextIdx];
+              this.loadTrack(t.url, t.title, t.artist, t.cover, t.albumUrl);
+            } else {
+              this.isPlaying = false;
+              this.updatePlayUI();
+            }
           }
         });
 

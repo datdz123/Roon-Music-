@@ -87,7 +87,7 @@ $popular_albums = function_exists('roon_get_popular_albums') ? roon_get_popular_
 ?>
 
 <div id="page-home" class="roon-page font-inter">
-    <h1 class="text-[38px] font-bold tracking-tight text-gray-900 mb-6 leading-tight">Xin chào !</h1>
+    <h1 class="text-[38px] font-bold tracking-tight text-gray-900 mb-6 leading-tight"><?php echo ( ( function_exists('get_field') && get_field('greeting_heading', 'option') ) ? get_field('greeting_heading', 'option') : 'Xin chào !' ); ?></h1>
 
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-8">
         <?php foreach ($stats as $stat) : ?>

@@ -224,7 +224,34 @@ function roon_get_shopee_aff_link()
 
 	$link = get_field('shopee_aff_link', 'option');
 
-	return is_string($link) ? trim($link) : '';
+	if (! is_string($link)) {
+		return '';
+	}
+
+	$link = trim(wp_strip_all_tags($link));
+	$link = preg_replace('/[\x00-\x1F\x7F\x{00A0}\x{200B}-\x{200D}\x{FEFF}]/u', '', $link);
+
+	if (empty($link) || ! wp_http_validate_url($link)) {
+		return '';
+	}
+
+	$parts = wp_parse_url($link);
+
+	if (is_array($parts) && ! empty($parts['host']) && 's.shopee.vn' === strtolower((string) $parts['host'])) {
+		$scheme   = ! empty($parts['scheme']) ? strtolower((string) $parts['scheme']) : 'https';
+		$host     = (string) $parts['host'];
+		$path     = '/' . ltrim((string) ($parts['path'] ?? ''), '/');
+		$query    = isset($parts['query']) && '' !== (string) $parts['query'] ? '?' . (string) $parts['query'] : '';
+		$fragment = isset($parts['fragment']) && '' !== (string) $parts['fragment'] ? '#' . (string) $parts['fragment'] : '';
+
+		if ('/' !== $path) {
+			$path = rtrim($path, '/');
+		}
+
+		$link = $scheme . '://' . $host . $path . $query . $fragment;
+	}
+
+	return $link;
 }
 
 /**
@@ -1340,3 +1367,12 @@ add_filter('admin_url', function($url) {
 add_filter('script_loader_src', function($src) {
     return str_replace('http://', 'https://', $src);
 });
+
+// Keep REST publicly accessible for frontend features (search/player).
+add_filter('rest_authentication_errors', function($result) {
+	if ($result instanceof WP_Error && 'rest_not_logged_in' === $result->get_error_code()) {
+		return null;
+	}
+
+	return $result;
+}, 999);
