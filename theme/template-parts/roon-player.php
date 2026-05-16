@@ -158,12 +158,14 @@ document.addEventListener('DOMContentLoaded', function() {
     var playerElement = document.getElementById('roon-player');
     var overlay = document.getElementById('roon-affiliate-overlay');
     var affiliateOpen = document.getElementById('roon-affiliate-open');
+    var affiliateTriggers = document.querySelectorAll('.roon-affiliate-trigger');
     var audioPlayer = document.getElementById('roon-audio');
     var volumeFill = document.getElementById('player-volume-fill');
     var volumeThumb = document.getElementById('player-volume-thumb');
     var rootStyle = document.documentElement.style;
     var affiliateTimer = null;
     var affiliatePopupShown = false;
+    var pendingDownloadUrl = '';
     var originalVolume = audioPlayer ? audioPlayer.volume : 0.75;
     var wasPlaying = false;
     var todayKey = 'roon_ad_count_' + new Date().toDateString();
@@ -190,8 +192,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return (
             window.roonPlayerSettings &&
             window.roonPlayerSettings.affiliateUrl &&
-            getAdOpenedCount() < (parseInt(window.roonPlayerSettings.dailyAffiliateLimit, 10) || 2) &&
-            !affiliatePopupShown
+            getAdOpenedCount() < (parseInt(window.roonPlayerSettings.dailyAffiliateLimit, 10) || 2)
         );
     }
 
@@ -204,12 +205,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function showAffiliateOverlay() {
-        if (!canShowAffiliate() || !overlay) {
+    function showAffiliateOverlay(downloadUrl) {
+        if (!overlay) {
+            return;
+        }
+
+        if (!canShowAffiliate() && !downloadUrl) {
             return;
         }
 
         affiliatePopupShown = true;
+        pendingDownloadUrl = typeof downloadUrl === 'string' ? downloadUrl.trim() : '';
         document.body.classList.add('roon-affiliate-active');
 
         if (audioPlayer) {
@@ -230,6 +236,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         overlay.classList.add('hidden');
         document.body.classList.remove('roon-affiliate-active');
+        pendingDownloadUrl = '';
 
         if (audioPlayer) {
             audioPlayer.volume = originalVolume;
@@ -264,31 +271,36 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function openAffiliateLink() {
-        if (!window.roonPlayerSettings || !window.roonPlayerSettings.affiliateUrl) {
+        if (!window.roonPlayerSettings) {
             return;
         }
 
         var affiliateUrl = String(window.roonPlayerSettings.affiliateUrl || '').trim();
         affiliateUrl = affiliateUrl.replace(/[\u200B-\u200D\uFEFF]/g, '');
 
-        if (!affiliateUrl) {
-            return;
-        }
+        if (affiliateUrl) {
+            try {
+                var normalizedUrl = new URL(affiliateUrl);
 
-        try {
-            var normalizedUrl = new URL(affiliateUrl);
+                if (normalizedUrl.hostname === 's.shopee.vn' && normalizedUrl.pathname !== '/') {
+                    normalizedUrl.pathname = normalizedUrl.pathname.replace(/\/+$/, '');
+                }
 
-            if (normalizedUrl.hostname === 's.shopee.vn' && normalizedUrl.pathname !== '/') {
-                normalizedUrl.pathname = normalizedUrl.pathname.replace(/\/+$/, '');
+                affiliateUrl = normalizedUrl.toString();
+            } catch (error) {
+                affiliateUrl = '';
             }
-
-            affiliateUrl = normalizedUrl.toString();
-        } catch (error) {
-            return;
         }
 
-        window.open(affiliateUrl, '_blank', 'noopener,noreferrer');
-        incrementAdOpenedCount();
+        if (affiliateUrl) {
+            window.open(affiliateUrl, '_blank', 'noopener,noreferrer');
+            incrementAdOpenedCount();
+        }
+
+        if (pendingDownloadUrl) {
+            window.open(pendingDownloadUrl, '_blank', 'noopener,noreferrer');
+        }
+
         hideAffiliateOverlay();
     }
 
@@ -312,6 +324,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (affiliateOpen) {
         affiliateOpen.addEventListener('click', openAffiliateLink);
+    }
+
+    if (affiliateTriggers.length) {
+        affiliateTriggers.forEach(function(trigger) {
+            trigger.addEventListener('click', function() {
+                var downloadUrl = trigger.getAttribute('data-download-url') || '';
+
+                if (canShowAffiliate()) {
+                    showAffiliateOverlay(downloadUrl);
+                    return;
+                }
+
+                if (downloadUrl) {
+                    window.open(downloadUrl, '_blank', 'noopener,noreferrer');
+                }
+            });
+        });
     }
 
     updateVolumeUI(audioPlayer ? audioPlayer.volume : originalVolume);

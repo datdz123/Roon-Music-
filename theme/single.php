@@ -119,10 +119,14 @@
 									</button>
 								<?php else : ?>
 									<?php if ( $album_dl_url ) : ?>
-									<a href="<?php echo esc_url( $album_dl_url ); ?>" target="_blank" class="flex min-h-[42px] items-center gap-2 rounded-full border-none bg-gray-100 px-5 py-2 text-[13px] font-semibold text-gray-700 hover:bg-gray-200 transition-colors sm:min-h-0 no-underline cursor-pointer">
+									<button
+										type="button"
+										class="roon-affiliate-trigger flex min-h-[42px] items-center gap-2 rounded-full border-none bg-gray-100 px-5 py-2 text-[13px] font-semibold text-gray-700 transition-colors hover:bg-gray-200 sm:min-h-0"
+										data-download-url="<?php echo esc_url( $album_dl_url ); ?>"
+									>
 										<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
 										Tải về
-									</a>
+									</button>
 									<?php endif; ?>
 								<?php endif; ?>
 							</div>
