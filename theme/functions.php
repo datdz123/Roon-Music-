@@ -1090,6 +1090,21 @@ require get_template_directory() . '/inc/customizer-block.php';
 require get_template_directory() . '/inc/jellyfin-import.php';
 
 /**
+ * Đăng nhập bằng Google (Google Identity Services).
+ */
+require get_template_directory() . '/inc/google-login.php';
+
+/**
+ * Danh sách bài hát yêu thích (per-user).
+ */
+require get_template_directory() . '/inc/favorites.php';
+
+/**
+ * Giới hạn lượt tải về mỗi ngày.
+ */
+require get_template_directory() . '/inc/downloads.php';
+
+/**
  * Hide Custom Theme
  */
 // define('DISALLOW_FILE_EDIT', true);

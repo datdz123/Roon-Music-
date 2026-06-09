@@ -38,6 +38,35 @@
             "ui_off_text": "Tắt"
         },
         {
+            "key": "field_daily_download_limit",
+            "label": "Giới hạn lượt tải mỗi ngày",
+            "name": "daily_download_limit",
+            "type": "number",
+            "instructions": "Số lượt tải tối đa mỗi ngày cho mỗi người dùng (chưa đăng nhập thì tính theo IP). Mặc định 1. Hết lượt sẽ tự khóa nút Tải về tới ngày hôm sau.",
+            "required": 0,
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_enable_album_download",
+                        "operator": "==",
+                        "value": "1"
+                    }
+                ]
+            ],
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": 1,
+            "min": 1,
+            "max": "",
+            "placeholder": 1,
+            "step": 1,
+            "prepend": "",
+            "append": "lượt/ngày"
+        },
+        {
             "key": "field_tab_listen_later",
             "label": "Listen Later",
             "name": "",
@@ -107,5 +136,5 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1743501000
+    "modified": 1749100100
 }

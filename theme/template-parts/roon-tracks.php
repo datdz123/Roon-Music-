@@ -59,7 +59,7 @@ $tracks = function_exists('roon_get_library_tracks') ? roon_get_library_tracks()
         </div>
     </div>
 
-    <div id="tracks-list" class="flex flex-col">
+    <div id="tracks-list" data-roon-playlist="tracks" class="flex flex-col">
         <?php foreach ($tracks as $track) : ?>
         <div class="roon-track-row flex items-center gap-3 px-2 py-1.5 rounded-lg cursor-pointer group hover:bg-gray-50 transition-colors"
              data-title="<?php echo esc_attr(strtolower($track['title'])); ?>"
@@ -83,8 +83,9 @@ $tracks = function_exists('roon_get_library_tracks') ? roon_get_library_tracks()
             </div>
             <a href="<?php echo esc_url($track['post_url']); ?>" class="hidden md:block flex-[1.5] text-[12.5px] text-roon-blue truncate no-underline hover:underline"><?php echo esc_html($track['album']); ?></a>
             <div class="hidden md:block flex-[1.5] text-[12.5px] text-roon-blue truncate"><?php echo esc_html($track['artist']); ?></div>
-            <div class="flex items-center gap-2.5 flex-shrink-0 w-10 justify-end">
-                <span class="text-[12.5px] text-gray-400 tabular-nums"><?php echo esc_html($track['duration']); ?></span>
+            <div class="flex items-center gap-1 flex-shrink-0 justify-end">
+                <?php if (function_exists('roon_fav_heart_button')) echo roon_fav_heart_button($track); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- đã escape trong hàm. ?>
+                <span class="w-10 text-right text-[12.5px] text-gray-400 tabular-nums"><?php echo esc_html($track['duration']); ?></span>
             </div>
         </div>
         <?php endforeach; ?>

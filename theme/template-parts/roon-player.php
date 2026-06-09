@@ -158,7 +158,8 @@ document.addEventListener('DOMContentLoaded', function() {
     var playerElement = document.getElementById('roon-player');
     var overlay = document.getElementById('roon-affiliate-overlay');
     var affiliateOpen = document.getElementById('roon-affiliate-open');
-    var affiliateTriggers = document.querySelectorAll('.roon-affiliate-trigger');
+    var downloadTriggers = document.querySelectorAll('.roon-download-trigger');
+    var roonDl = window.roonDownload || {};
     var audioPlayer = document.getElementById('roon-audio');
     var volumeFill = document.getElementById('player-volume-fill');
     var volumeThumb = document.getElementById('player-volume-thumb');
@@ -326,19 +327,60 @@ document.addEventListener('DOMContentLoaded', function() {
         affiliateOpen.addEventListener('click', openAffiliateLink);
     }
 
-    if (affiliateTriggers.length) {
-        affiliateTriggers.forEach(function(trigger) {
-            trigger.addEventListener('click', function() {
+    function disableDownloadButtons(message) {
+        downloadTriggers.forEach(function (btn) {
+            btn.disabled = true;
+            btn.className = 'roon-download-trigger flex min-h-[42px] items-center gap-2 rounded-full border border-gray-800 bg-gray-900 px-5 py-2 text-[13px] font-semibold text-gray-300 cursor-not-allowed sm:min-h-0';
+            if (message) { btn.setAttribute('title', message); }
+            var label = btn.querySelector('.roon-download-label');
+            if (label) { label.textContent = 'Hết lượt tải hôm nay'; }
+        });
+    }
+
+    // Trừ 1 lượt tải/ngày ở server (chạy ngầm). Hết lượt thì khóa nút.
+    function registerDownloadCount(trigger) {
+        var cfg = window.roonDownload || {};
+        if (!cfg.ajaxUrl) { return; }
+
+        var body = new URLSearchParams();
+        body.append('action', 'roon_consume_download');
+        body.append('nonce', cfg.nonce || '');
+        body.append('post_id', trigger.getAttribute('data-post-id') || '');
+
+        fetch(cfg.ajaxUrl, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: body.toString()
+        })
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+                if (data && data.data && data.data.exhausted) {
+                    disableDownloadButtons(data.data.message || 'Bạn đã hết lượt tải hôm nay.');
+                }
+            })
+            .catch(function () {});
+    }
+
+    if (downloadTriggers.length) {
+        // Khóa sẵn nút nếu server báo đã hết lượt hôm nay.
+        if (typeof roonDl.remaining !== 'undefined' && Number(roonDl.limit) > 0 && Number(roonDl.remaining) <= 0) {
+            disableDownloadButtons('Bạn đã hết lượt tải hôm nay.');
+        }
+        downloadTriggers.forEach(function (trigger) {
+            trigger.addEventListener('click', function () {
+                if (trigger.disabled) { return; }
                 var downloadUrl = trigger.getAttribute('data-download-url') || '';
 
+                // ── Logic popup ủng hộ GIỮ NGUYÊN như trước ──
                 if (canShowAffiliate()) {
                     showAffiliateOverlay(downloadUrl);
-                    return;
-                }
-
-                if (downloadUrl) {
+                } else if (downloadUrl) {
                     window.open(downloadUrl, '_blank', 'noopener,noreferrer');
                 }
+
+                // ── Bổ sung: trừ lượt tải theo ngày ──
+                registerDownloadCount(trigger);
             });
         });
     }

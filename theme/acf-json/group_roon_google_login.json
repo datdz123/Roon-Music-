@@ -1,0 +1,84 @@
+{
+    "key": "group_roon_google_login",
+    "title": "Đăng nhập Google",
+    "fields": [
+        {
+            "key": "field_roon_google_tab",
+            "label": "Đăng nhập Google",
+            "name": "",
+            "aria-label": "",
+            "type": "tab",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "placement": "top",
+            "endpoint": 0
+        },
+        {
+            "key": "field_roon_google_client_id",
+            "label": "Google Client ID",
+            "name": "google_client_id",
+            "aria-label": "",
+            "type": "text",
+            "instructions": "Lấy ở Google Cloud Console > APIs & Services > Credentials > OAuth 2.0 Client IDs (loại Web application). Bắt buộc để nút đăng nhập hoạt động. Nhớ thêm domain site vào \"Authorized JavaScript origins\".",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "100",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "maxlength": "",
+            "allow_in_bindings": 0,
+            "placeholder": "xxxxxxxx.apps.googleusercontent.com",
+            "prepend": "",
+            "append": ""
+        },
+        {
+            "key": "field_roon_google_client_secret",
+            "label": "Google Client Secret",
+            "name": "google_client_secret",
+            "aria-label": "",
+            "type": "text",
+            "instructions": "Không bắt buộc cho luồng đăng nhập hiện tại (Google Identity Services chỉ cần Client ID). Lưu sẵn để dùng cho các tính năng OAuth nâng cao sau này.",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "100",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "maxlength": "",
+            "allow_in_bindings": 0,
+            "placeholder": "GOCSPX-...",
+            "prepend": "",
+            "append": ""
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "options_page",
+                "operator": "==",
+                "value": "cai-dat-chung"
+            }
+        ]
+    ],
+    "menu_order": 5,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": "",
+    "active": true,
+    "description": "",
+    "show_in_rest": 0,
+    "modified": 1749100000
+}

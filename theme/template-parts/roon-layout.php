@@ -22,6 +22,7 @@
             <?php get_template_part('template-parts/roon-albums'); ?>
             <?php get_template_part('template-parts/roon-artists'); ?>
             <?php get_template_part('template-parts/roon-tracks'); ?>
+            <?php get_template_part('template-parts/roon-fav-tracks'); ?>
             <?php get_template_part('template-parts/roon-single-album'); ?>
             <?php get_template_part('template-parts/roon-search'); ?>
             <?php get_template_part('template-parts/roon-fav-albums'); ?>

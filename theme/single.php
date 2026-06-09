@@ -110,6 +110,8 @@
 								<?php
 								$enable_download = function_exists('get_field') ? get_field('enable_album_download', 'option') : false;
 								$album_dl_url    = function_exists('get_field') ? get_field('album_download_url_manual', get_the_ID()) : '';
+								$dl_exhausted    = function_exists('roon_is_download_exhausted') ? roon_is_download_exhausted() : false;
+								$dl_remaining    = function_exists('roon_get_download_remaining') ? roon_get_download_remaining() : 0;
 								
 								if ( ! $enable_download ) :
 								?>
@@ -117,15 +119,25 @@
 										<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
 										Tải về
 									</button>
-								<?php else : ?>
-									<?php if ( $album_dl_url ) : ?>
-									<button
-										type="button"
-										class="roon-affiliate-trigger flex min-h-[42px] items-center gap-2 rounded-full border-none bg-gray-100 px-5 py-2 text-[13px] font-semibold text-gray-700 transition-colors hover:bg-gray-200 sm:min-h-0"
-										data-download-url="<?php echo esc_url( $album_dl_url ); ?>"
+								<?php elseif ( $album_dl_url ) : ?>
+									<?php if ( $dl_exhausted ) : ?>
+									<button type="button" disabled
+										class="roon-download-trigger flex min-h-[42px] items-center gap-2 rounded-full border border-gray-800 bg-gray-900 px-5 py-2 text-[13px] font-semibold text-gray-300 cursor-not-allowed sm:min-h-0"
+										data-post-id="<?php echo esc_attr( get_the_ID() ); ?>"
+										title="<?php esc_attr_e( 'Bạn đã hết lượt tải hôm nay. Vui lòng quay lại vào ngày mai.', 'roon' ); ?>"
 									>
 										<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-										Tải về
+										<span class="roon-download-label"><?php esc_html_e( 'Hết lượt tải hôm nay', 'roon' ); ?></span>
+									</button>
+									<?php else : ?>
+									<button type="button"
+										class="roon-download-trigger flex min-h-[42px] items-center gap-2 rounded-full border-none bg-gray-100 px-5 py-2 text-[13px] font-semibold text-gray-700 transition-colors hover:bg-gray-200 sm:min-h-0"
+										data-download-url="<?php echo esc_url( $album_dl_url ); ?>"
+										data-post-id="<?php echo esc_attr( get_the_ID() ); ?>"
+										data-remaining="<?php echo esc_attr( $dl_remaining ); ?>"
+									>
+										<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+										<span class="roon-download-label">Tải về</span>
 									</button>
 									<?php endif; ?>
 								<?php endif; ?>
@@ -157,10 +169,12 @@
 								$artist_name = $artist_terms[0]->name;
 							}
 							?>
-							<div class="flex flex-col divide-y divide-gray-100">
+							<div class="flex flex-col divide-y divide-gray-100" data-roon-playlist="album">
 								<?php
 								if ( $tracks ) :
 									$index = 1;
+									$album_title_for_fav = get_the_title();
+									$album_post_url      = get_permalink();
 									foreach ( $tracks as $track ) :
 										$t_title    = ! empty( $track['track_title'] ) ? $track['track_title'] : 'Unknown Track';
 										$t_duration = ! empty( $track['track_duration'] ) ? $track['track_duration'] : '--:--';
@@ -176,7 +190,8 @@
 													data-stream-url="<?php echo esc_url( $t_url ); ?>"
 													data-track-title="<?php echo esc_attr( $t_title ); ?>"
 													data-track-artist="<?php echo esc_attr( $track_artist_display ); ?>"
-													data-track-cover="<?php echo esc_url( $album_cover ); ?>">
+													data-track-cover="<?php echo esc_url( $album_cover ); ?>"
+													data-track-album-url="<?php echo esc_url( $album_post_url ); ?>">
 												<svg width="20" height="20" viewBox="0 0 24 24" fill="#3b3ef6">
 													<circle cx="12" cy="12" r="10"/>
 													<polygon points="10 8 16 12 10 16 10 8" fill="white"/>
@@ -190,7 +205,23 @@
 											<div class="hidden md:block min-w-0 flex-[1.5] truncate text-[12.5px] text-gray-500" title="<?php echo esc_attr( $track_artist_display ); ?>"><?php echo esc_html( $track_artist_display ); ?></div>
 
 											<!-- Right actions -->
-											<div class="flex flex-shrink-0 items-center gap-4">
+											<div class="flex flex-shrink-0 items-center gap-2">
+												<!-- Favorite -->
+												<?php
+												if ( function_exists( 'roon_fav_heart_button' ) ) {
+													echo roon_fav_heart_button( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- đã escape trong hàm.
+														array(
+															'title'      => $t_title,
+															'artist'     => $track_artist_display,
+															'album'      => $album_title_for_fav,
+															'cover'      => $album_cover,
+															'stream_url' => $t_url,
+															'duration'   => $t_duration,
+															'post_url'   => $album_post_url,
+														)
+													);
+												}
+												?>
 												<!-- Duration -->
 												<span class="min-w-[40px] tabular-nums text-right text-[13px] text-gray-400"><?php echo esc_html( $t_duration ); ?></span>
 											</div>

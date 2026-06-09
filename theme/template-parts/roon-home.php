@@ -9,7 +9,7 @@ $stats = [
     ['label' => 'ARTISTS',   'count' => $library_stats['artists'] ?? 0,   'icon' => 'artists'],
     ['label' => 'ALBUMS',    'count' => $library_stats['albums'] ?? 0,    'icon' => 'albums'],
     ['label' => 'TRACKS',    'count' => $library_stats['tracks'] ?? 0,    'icon' => 'tracks'],
-    ['label' => 'COMPOSERS', 'count' => $library_stats['composers'] ?? 0, 'icon' => 'composers'],
+    ['label' => 'Playlist yêu thích', 'count' => function_exists('roon_get_user_fav_tracks') ? count(roon_get_user_fav_tracks()) : 0, 'icon' => 'fav-tracks'],
 ];
 
 
@@ -89,6 +89,116 @@ $popular_albums = function_exists('roon_get_popular_albums') ? roon_get_popular_
 <div id="page-home" class="roon-page font-inter">
     <h1 class="text-[38px] font-bold tracking-tight text-gray-900 mb-6 leading-tight"><?php echo ( ( function_exists('get_field') && get_field('greeting_heading', 'option') ) ? get_field('greeting_heading', 'option') : 'Xin chào !' ); ?></h1>
 
+    <?php
+    $home_is_logged_in = is_user_logged_in();
+    $home_fav_tracks   = ( $home_is_logged_in && function_exists('roon_get_fav_tracks_for_display') ) ? roon_get_fav_tracks_for_display() : array();
+    $home_fav_count    = count($home_fav_tracks);
+    $home_fav_preview  = array_slice($home_fav_tracks, 0, 5);
+    ?>
+    <!-- Playlist của bạn (yêu thích) -->
+    <div id="home-fav-panel" class="mb-8 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+        <div class="flex items-center justify-between gap-3 px-5 pt-5 pb-3">
+            <div class="flex items-center gap-2.5">
+                <svg class="text-roon-blue" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                <h2 class="m-0 text-[16px] font-semibold text-gray-900">Playlist của bạn</h2>
+                <?php if ( $home_is_logged_in ) : ?>
+                <span id="home-fav-count-badge" class="rounded-full bg-gray-100 px-2.5 py-0.5 text-[11px] font-medium text-gray-500"><?php echo (int) $home_fav_count; ?> bài hát</span>
+                <?php endif; ?>
+            </div>
+            <a href="<?php echo esc_url( home_url('/#fav-tracks') ); ?>" data-page="fav-tracks" class="hidden items-center gap-1 text-[13px] font-medium text-roon-blue no-underline hover:underline sm:flex">
+                Xem toàn bộ playlist
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+        </div>
+
+        <?php if ( ! $home_is_logged_in ) : ?>
+            <div class="flex flex-col items-center gap-3 px-5 py-8 text-center">
+                <p class="m-0 text-[13.5px] text-gray-500">Đăng nhập để tạo và nghe playlist bài hát yêu thích của bạn.</p>
+                <button type="button" class="roon-open-login flex items-center gap-2 rounded-full bg-roon-blue px-5 py-2.5 text-[13px] font-semibold text-white hover:bg-roon-indigo transition-colors cursor-pointer">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                    Đăng nhập
+                </button>
+            </div>
+        <?php else : ?>
+            <div id="home-fav-empty" class="<?php echo $home_fav_count ? 'hidden' : ''; ?> px-5 py-8 text-center">
+                <p class="m-0 text-[13.5px] text-gray-500">Chưa có bài hát yêu thích.</p>
+                <p class="mt-1 text-[12.5px] text-gray-400">Bấm vào biểu tượng ♥ ở mỗi bài hát để thêm vào playlist.</p>
+            </div>
+
+            <?php if ( $home_fav_count > 0 ) : ?>
+            <div id="home-fav-body">
+                <div class="mx-5 mb-1 flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2.5">
+                    <svg class="text-roon-blue" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                    <span class="text-[13px] font-semibold text-gray-800">Playlist yêu thích</span>
+                </div>
+
+                <div id="home-fav-list" data-roon-playlist="home-fav" class="px-2 pb-1">
+                    <?php foreach ( $home_fav_preview as $track ) : ?>
+                    <div class="roon-home-fav-row group flex items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-gray-50" data-fav-key="<?php echo esc_attr( $track['key'] ); ?>">
+                        <span class="w-4 flex-shrink-0 text-right text-[12.5px] tabular-nums text-gray-400"><?php echo esc_html( $track['num'] ); ?></span>
+                        <button type="button" class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border-none bg-roon-blue/10 text-roon-blue transition-colors hover:bg-roon-blue hover:text-white cursor-pointer"
+                            data-stream-url="<?php echo esc_url( $track['stream_url'] ); ?>"
+                            data-track-title="<?php echo esc_attr( $track['title'] ); ?>"
+                            data-track-artist="<?php echo esc_attr( $track['artist'] ); ?>"
+                            data-track-cover="<?php echo esc_url( $track['cover'] ); ?>"
+                            data-track-album-url="<?php echo esc_url( $track['post_url'] ); ?>">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        </button>
+                        <div class="min-w-0 flex-[2] truncate text-[13.5px] font-medium text-gray-800"><?php echo esc_html( $track['title'] ); ?></div>
+                        <div class="hidden min-w-0 flex-[1] truncate text-right text-[12.5px] text-gray-500 sm:block"><?php echo esc_html( $track['artist'] ); ?></div>
+                        <?php if ( function_exists('roon_fav_heart_button') ) echo roon_fav_heart_button( $track, true ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- đã escape trong hàm. ?>
+                        <span class="w-10 flex-shrink-0 text-right text-[12.5px] tabular-nums text-gray-400"><?php echo esc_html( $track['duration'] ); ?></span>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+
+                <div class="flex items-center justify-between gap-3 border-t border-gray-100 px-5 py-3">
+                    <button type="button" class="roon-home-playall flex items-center gap-2 rounded-full bg-roon-blue px-4 py-2 text-[13px] font-semibold text-white hover:bg-roon-indigo transition-colors cursor-pointer">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        Phát tất cả
+                    </button>
+                    <a href="<?php echo esc_url( home_url('/#fav-tracks') ); ?>" data-page="fav-tracks" class="flex items-center gap-1 text-[13px] font-medium text-roon-blue no-underline hover:underline sm:hidden">
+                        Xem toàn bộ
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                    </a>
+                </div>
+            </div>
+            <?php endif; ?>
+        <?php endif; ?>
+    </div>
+
+    <script>
+    (function () {
+        var panel = document.getElementById('home-fav-panel');
+        if (!panel) return;
+        var list = document.getElementById('home-fav-list');
+        var playAll = panel.querySelector('.roon-home-playall');
+        var badge = document.getElementById('home-fav-count-badge');
+        var body = document.getElementById('home-fav-body');
+        var empty = document.getElementById('home-fav-empty');
+        var total = <?php echo (int) $home_fav_count; ?>;
+
+        if (playAll && list) {
+            playAll.addEventListener('click', function () {
+                var first = list.querySelector('[data-stream-url][data-track-title]');
+                if (first) first.click();
+            });
+        }
+
+        document.addEventListener('roon:fav-changed', function (e) {
+            if (!e.detail || !list || e.detail.favorited) return;
+            var row = list.querySelector('.roon-home-fav-row[data-fav-key="' + e.detail.key + '"]');
+            if (row) row.parentNode.removeChild(row);
+            total = Math.max(0, total - 1);
+            if (badge) badge.textContent = total + ' bài hát';
+            if (list.querySelectorAll('.roon-home-fav-row').length === 0) {
+                if (body) body.classList.add('hidden');
+                if (empty) empty.classList.remove('hidden');
+            }
+        });
+    })();
+    </script>
+
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-8">
         <?php foreach ($stats as $stat) : ?>
         <div class="flex items-center gap-3 sm:gap-4 p-4 sm:p-5 bg-white border border-gray-100 rounded-2xl shadow-sm cursor-pointer hover:shadow-xl hover:border-gray-200 hover:-translate-y-1 transition-all duration-300 group"
@@ -106,6 +216,10 @@ $popular_albums = function_exists('roon_get_popular_albums') ? roon_get_popular_
                 <?php elseif ($stat['icon'] === 'tracks') : ?>
                 <svg class="w-7 h-7 sm:w-[34px] sm:h-[34px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                     <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+                </svg>
+                <?php elseif ($stat['icon'] === 'fav-tracks') : ?>
+                <svg class="w-7 h-7 sm:w-[34px] sm:h-[34px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                 </svg>
                 <?php else : ?>
                 <svg class="w-7 h-7 sm:w-[34px] sm:h-[34px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">

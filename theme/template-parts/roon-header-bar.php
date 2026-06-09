@@ -32,5 +32,5 @@
     <div id="roon-page-title" class="flex-1 text-[13px] font-medium text-gray-600 text-left sm:text-center truncate hidden sm:block"></div>
 
     <!-- Right: actions -->
-    
+    <?php get_template_part( 'template-parts/roon', 'auth' ); ?>
 </div>

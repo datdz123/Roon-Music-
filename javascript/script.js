@@ -11,6 +11,7 @@
           RoonNav.init();
           RoonPlayer.init();
           RoonTabs.init();
+          RoonFav.init();
         }
       });
     };
@@ -92,6 +93,7 @@
         "albums":       "Album Nhạc",
         "artists":      "Ca Sĩ / Artist",
         "tracks":       "Bài Hát / Track",
+        "fav-tracks":   "Bài hát yêu thích",
         "single-album": "",
         "search":       "",
         "fav-albums":   "Album Yêu Thích",
@@ -519,41 +521,45 @@
         // ── Phát tất cả (play-all-tracks) ──
         $(document).on('click', '#play-all-tracks', (e) => {
           e.preventDefault();
-          const allBtns = $('[data-stream-url][data-track-title]').toArray();
+          const allBtns = this.collectPlaylistButtons($(e.currentTarget));
           if(allBtns.length === 0) return;
-          this.playlist = allBtns.map((b) => ({
-            url:      $(b).data('stream-url'),
-            title:    $(b).data('track-title'),
-            artist:   $(b).data('track-artist') || '',
-            cover:    $(b).data('track-cover') || 'https://placehold.co/48x48/e5e5e5/999?text=\u266B',
-            albumUrl: $(b).data('track-album-url') || '',
-          }));
+          this.playlist = allBtns.map((b) => this.buttonToTrack($(b)));
           this.currentTrackIndex = 0;
           const t = this.playlist[0];
           this.loadTrack(t.url, t.title, t.artist, t.cover, t.albumUrl);
         });
       },
+      buttonToTrack($b) {
+        return {
+          url:      $b.attr('data-stream-url'),
+          title:    $b.attr('data-track-title'),
+          artist:   $b.attr('data-track-artist') || '',
+          cover:    $b.attr('data-track-cover') || 'https://placehold.co/48x48/e5e5e5/999?text=\u266B',
+          albumUrl: $b.attr('data-track-album-url') || '',
+        };
+      },
+      // L\u1EA5y danh s\u00E1ch n\u00FAt play c\u00F9ng h\u00E0ng \u0111\u1EE3i: trong c\u00F9ng [data-roon-playlist],
+      // n\u1EBFu kh\u00F4ng c\u00F3 th\u00EC l\u1EA5y to\u00E0n b\u1ED9 t\u00E0i li\u1EC7u (gi\u1EEF h\u00E0nh vi c\u0169).
+      collectPlaylistButtons($btn) {
+        let $scope = ($btn && $btn.length) ? $btn.closest('[data-roon-playlist]') : $();
+        if (!$scope.length) $scope = $(document);
+        return $scope.find('[data-stream-url][data-track-title]').toArray();
+      },
       bindTracklistClicks() {
-        // Tracklist play buttons (single album + track rows)
+        // Tracklist play buttons (single album + track rows + favorites)
         $(document).on('click', '[data-stream-url][data-track-title]', (e) => {
           e.preventDefault();
           e.stopPropagation();
           const $btn     = $(e.currentTarget);
-          const url      = $btn.data('stream-url');
-          const title    = $btn.data('track-title');
-          const artist   = $btn.data('track-artist') || '';
-          const cover    = $btn.data('track-cover') || 'https://placehold.co/48x48/e5e5e5/999?text=♫';
-          const albumUrl = $btn.data('track-album-url') || '';
+          const url      = $btn.attr('data-stream-url');
+          const title    = $btn.attr('data-track-title');
+          const artist   = $btn.attr('data-track-artist') || '';
+          const cover    = $btn.attr('data-track-cover') || 'https://placehold.co/48x48/e5e5e5/999?text=♫';
+          const albumUrl = $btn.attr('data-track-album-url') || '';
 
-          // Build playlist từ tất cả nút play hiện có trong DOM
-          const allBtns = $('[data-stream-url][data-track-title]').toArray();
-          this.playlist = allBtns.map((b) => ({
-            url:      $(b).data('stream-url'),
-            title:    $(b).data('track-title'),
-            artist:   $(b).data('track-artist') || '',
-            cover:    $(b).data('track-cover') || 'https://placehold.co/48x48/e5e5e5/999?text=♫',
-            albumUrl: $(b).data('track-album-url') || '',
-          }));
+          // Build playlist từ các nút play trong cùng danh sách (hàng đợi)
+          const allBtns = this.collectPlaylistButtons($btn);
+          this.playlist = allBtns.map((b) => this.buttonToTrack($(b)));
           this.currentTrackIndex = allBtns.indexOf(e.currentTarget);
 
           this.loadTrack(url, title, artist, cover, albumUrl);
@@ -893,6 +899,82 @@
             $('#album-tab-credits').removeClass('hidden');
           }
         });
+      },
+    };
+
+    /* =========================================================
+     * ROON FAVORITES (Bài hát yêu thích)
+     * ======================================================= */
+    const RoonFav = {
+      init() {
+        $(document).on('click', '.roon-fav-heart', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          this.toggle($(e.currentTarget));
+        });
+      },
+
+      cfg() {
+        return window.roonFav || {};
+      },
+
+      openLogin() {
+        const loginBtn = document.getElementById('roon-login-btn');
+        if (loginBtn) loginBtn.click();
+      },
+
+      toggle($btn) {
+        const cfg = this.cfg();
+
+        if (!cfg.isLoggedIn) {
+          this.openLogin();
+          return;
+        }
+        if ($btn.data('fav-busy')) return;
+        $btn.data('fav-busy', true);
+
+        const payload = new URLSearchParams();
+        payload.append('action', 'roon_toggle_fav_track');
+        payload.append('nonce', cfg.nonce || '');
+        payload.append('key', $btn.attr('data-fav-key') || '');
+        payload.append('title', $btn.attr('data-fav-title') || '');
+        payload.append('artist', $btn.attr('data-fav-artist') || '');
+        payload.append('album', $btn.attr('data-fav-album') || '');
+        payload.append('cover', $btn.attr('data-fav-cover') || '');
+        payload.append('stream_url', $btn.attr('data-fav-stream') || '');
+        payload.append('duration', $btn.attr('data-fav-duration') || '');
+        payload.append('post_url', $btn.attr('data-fav-post') || '');
+
+        fetch(cfg.ajaxUrl, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: payload.toString()
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            $btn.data('fav-busy', false);
+            if (!data || !data.success) {
+              if (data && data.data && data.data.requireLogin) this.openLogin();
+              return;
+            }
+            const fav = !!data.data.favorited;
+            const key = data.data.key || $btn.attr('data-fav-key');
+
+            // Đồng bộ mọi nút cùng key đang hiển thị trên trang.
+            $('.roon-fav-heart[data-fav-key="' + key + '"]').each((i, el) => this.applyState($(el), fav));
+
+            document.dispatchEvent(new CustomEvent('roon:fav-changed', { detail: { key: key, favorited: fav } }));
+          })
+          .catch(() => { $btn.data('fav-busy', false); });
+      },
+
+      applyState($btn, fav) {
+        $btn.attr('aria-pressed', fav ? 'true' : 'false');
+        $btn.attr('title', fav ? 'Bỏ khỏi yêu thích' : 'Thêm vào yêu thích');
+        $btn.removeClass('text-rose-500 text-gray-300 hover:text-rose-400');
+        $btn.addClass(fav ? 'text-rose-500' : 'text-gray-300 hover:text-rose-400');
+        $btn.find('.roon-fav-heart-icon').attr('fill', fav ? 'currentColor' : 'none');
       },
     };
 
