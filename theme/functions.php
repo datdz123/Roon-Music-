@@ -358,6 +358,8 @@ add_action('template_redirect', 'roon_maybe_proxy_jellyfin_stream', 0);
  */
 function roon_proxy_jellyfin_stream($item_id)
 {
+	ignore_user_abort(false);
+
 	$server_url = roon_get_jellyfin_server_url();
 	$api_key    = roon_get_jellyfin_api_key();
 
@@ -461,6 +463,10 @@ function roon_proxy_jellyfin_stream($item_id)
 				echo $chunk;
 				if (function_exists('flush')) {
 					flush();
+				}
+
+				if (connection_aborted()) {
+					return 0;
 				}
 
 				return strlen($chunk);
@@ -911,28 +917,35 @@ function roon_get_library_artists()
  */
 function roon_get_library_tracks($limit = 0)
 {
-	$albums = roon_get_library_albums();
-	$tracks = array();
+	$cache_key = 'roon_library_tracks_all';
+	$tracks = get_transient($cache_key);
 
-	foreach ($albums as $album) {
-		$album_tracks = roon_get_post_album_tracks($album['id']);
+	if ( false === $tracks ) {
+		$albums = roon_get_library_albums();
+		$tracks = array();
 
-		foreach ($album_tracks as $index => $track) {
-			$tracks[] = array(
-				'num'        => sprintf('%02d', $index + 1),
-				'title'      => $track['track_title'] ?? 'Unknown Track',
-				'album'      => $album['title'],
-				'artist'     => $album['artist'],
-				'duration'   => $track['track_duration'] ?? '--:--',
-				'cover'      => $album['cover'],
-				'stream_url' => $track['stream_url'] ?? '#',
-				'post_url'   => $album['url'],
-			);
+		foreach ($albums as $album) {
+			$album_tracks = roon_get_post_album_tracks($album['id']);
 
-			if ($limit > 0 && count($tracks) >= $limit) {
-				return $tracks;
+			foreach ($album_tracks as $index => $track) {
+				$tracks[] = array(
+					'num'        => sprintf('%02d', $index + 1),
+					'title'      => $track['track_title'] ?? 'Unknown Track',
+					'album'      => $album['title'],
+					'artist'     => $album['artist'],
+					'duration'   => $track['track_duration'] ?? '--:--',
+					'cover'      => $album['cover'],
+					'stream_url' => $track['stream_url'] ?? '#',
+					'post_url'   => $album['url'],
+				);
 			}
 		}
+
+		set_transient($cache_key, $tracks, 6 * HOUR_IN_SECONDS);
+	}
+
+	if ($limit > 0 && count($tracks) > $limit) {
+		return array_slice($tracks, 0, $limit);
 	}
 
 	return $tracks;
@@ -976,6 +989,7 @@ function roon_clear_library_cache( $post_id ) {
 	$post = get_post( $post_id );
 	if ( $post && $post->post_type === 'post' ) {
 		delete_transient( 'roon_library_albums_all' );
+		delete_transient( 'roon_library_tracks_all' );
 		delete_transient( 'roon_library_stats_v2' );
 		delete_transient( 'roon_popular_albums_top50' );
 		delete_transient( 'roon_popular_artists_top10' );
